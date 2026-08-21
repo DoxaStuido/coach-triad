@@ -1,3 +1,5 @@
+const tr = (value) => window.cacI18n?.t(value) ?? value;
+
 const viewLabels = {
   overview: "Overview",
   matching: "Matching studio",
@@ -32,7 +34,7 @@ function setView(viewName) {
   document.querySelectorAll(".nav-item[data-view]").forEach((item) => {
     item.classList.toggle("is-active", item.dataset.view === viewName);
   });
-  currentViewLabel.textContent = viewLabels[viewName] || viewName;
+  currentViewLabel.textContent = tr(viewLabels[viewName] || viewName);
   sidebar.classList.remove("is-open");
   document.querySelector(".mobile-menu")?.setAttribute("aria-expanded", "false");
   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -87,6 +89,11 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "Escape") closeLayers();
 });
 
+window.addEventListener("cac:languagechange", () => {
+  closeLayers();
+  currentViewLabel.textContent = tr(viewLabels[state.currentView] || state.currentView);
+});
+
 const drawerData = {
   "T-014": { score: 94, status: "Strong match", description: "All required rules pass. Three chapters and two time zones are represented." },
   "T-031": { score: 88, status: "Strong match", description: "English preference and comfortable APAC hours align across three chapters." },
@@ -136,13 +143,13 @@ function renderDrawerProfile(profile) {
     avatar.className = `avatar ${member.className}`;
     avatar.textContent = member.initials;
     row.querySelector("strong").textContent = member.name;
-    row.querySelector("small").textContent = member.meta;
+    row.querySelector("small").textContent = tr(member.meta);
     row.querySelector("b").textContent = member.timezone;
   });
 
   document.querySelectorAll(".timezone-card > div").forEach((row, index) => {
-    row.querySelector("span").textContent = profile.windows[index][0];
-    row.querySelector("strong").textContent = profile.windows[index][1];
+    row.querySelector("span").textContent = tr(profile.windows[index][0]);
+    row.querySelector("strong").textContent = tr(profile.windows[index][1]);
   });
 
   const rotations = [[0, 1, 2], [1, 2, 0], [2, 0, 1], [0, 2, 1], [1, 0, 2], [2, 1, 0]];
@@ -167,8 +174,8 @@ document.querySelectorAll("[data-open-triad]").forEach((button) => {
     renderDrawerProfile(drawerProfiles[triadId] || defaultDrawerProfile);
     document.querySelector("#drawer-title").textContent = triadId;
     document.querySelector(".drawer-score .score-ring strong").textContent = data.score;
-    document.querySelector(".drawer-score > div strong").textContent = data.status;
-    document.querySelector(".drawer-score > div p").textContent = data.description;
+    document.querySelector(".drawer-score > div strong").textContent = tr(data.status);
+    document.querySelector(".drawer-score > div p").textContent = tr(data.description);
     const ring = document.querySelector(".drawer-score .score-ring");
     ring.className = `score-ring ${data.score >= 80 ? "score-high" : data.score >= 70 ? "score-medium" : "score-low"}`;
     document.querySelector("#triad-drawer [data-approve]").dataset.approve = triadId;
@@ -183,7 +190,7 @@ document.querySelectorAll("[data-open-ai]").forEach((button) => {
 function toast(message) {
   const item = document.createElement("div");
   item.className = "toast";
-  item.innerHTML = `<svg aria-hidden="true" viewBox="0 0 24 24"><path d="m9 16.2-3.5-3.5L4 14.1l5 5 11-11-1.4-1.4L9 16.2Z"/></svg><span>${message}</span>`;
+  item.innerHTML = `<svg aria-hidden="true" viewBox="0 0 24 24"><path d="m9 16.2-3.5-3.5L4 14.1l5 5 11-11-1.4-1.4L9 16.2Z"/></svg><span>${tr(message)}</span>`;
   toastRegion.append(item);
   window.setTimeout(() => item.remove(), 3200);
 }
@@ -195,8 +202,8 @@ document.querySelectorAll("[data-approve]").forEach((button) => {
     const card = document.querySelector(`[data-search^="${id} "]`);
     card?.classList.add("is-approved");
     const actionText = card?.querySelector(".candidate-actions span");
-    if (actionText) actionText.textContent = "Approved and locked for this draft";
-    button.textContent = "Approved";
+    if (actionText) actionText.textContent = tr("Approved and locked for this draft");
+    button.textContent = tr("Approved");
     toast(`${id} approved for draft run #04`);
     if (triadDrawer.classList.contains("is-open")) closeLayers();
   });
@@ -214,14 +221,14 @@ document.querySelectorAll("[data-action]").forEach((button) => {
 });
 
 document.querySelectorAll("[data-resolve-action]").forEach((button) => {
-  button.addEventListener("click", () => toast(`${button.dataset.resolveAction} · preview only`));
+  button.addEventListener("click", () => toast(`${tr(button.dataset.resolveAction)} · ${window.cacI18n?.language === "zh-TW" ? "僅供預覽" : "preview only"}`));
 });
 
 const runButton = document.querySelector("#run-matching-button");
 runButton?.addEventListener("click", () => {
   const original = runButton.innerHTML;
   runButton.disabled = true;
-  runButton.textContent = "Evaluating 294 participants…";
+  runButton.textContent = tr("Evaluating 294 participants…");
   window.setTimeout(() => {
     runButton.innerHTML = original;
     runButton.disabled = false;
@@ -324,13 +331,13 @@ function sendAiMessage(prompt) {
   const assistantMessage = document.createElement("div");
   assistantMessage.className = "chat-message";
   const assistantText = document.createElement("p");
-  assistantText.textContent = response.answer;
+  assistantText.textContent = tr(response.answer);
   assistantMessage.append(assistantText);
   messages.append(assistantMessage);
 
   const resultCard = document.createElement("div");
   resultCard.className = "chat-result-card";
-  resultCard.innerHTML = `<strong>Suggested next step</strong><p>No data will change until you confirm an action.</p><button type="button">${response.action} →</button>`;
+  resultCard.innerHTML = `<strong>${tr("Suggested next step")}</strong><p>${tr("No data will change until you confirm an action.")}</p><button type="button">${tr(response.action)} →</button>`;
   resultCard.querySelector("button").addEventListener("click", () => {
     closeLayers();
     setView(response.view);
