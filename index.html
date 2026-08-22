@@ -1,0 +1,499 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Interactive operations mockup for the Coach a Coach 2026 program."
+    />
+    <title>Coach a Coach 2026 · Operations Console</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Primary navigation">
+        <a class="brand" href="#overview" aria-label="Coach a Coach home">
+          <span class="brand-mark" aria-hidden="true">
+            <span>C</span><span>A</span><span>C</span>
+          </span>
+          <span class="brand-copy">
+            <strong>Coach a Coach</strong>
+            <small>APAC · 2026</small>
+          </span>
+        </a>
+
+        <nav class="primary-nav">
+          <button class="nav-item is-active" data-view="overview" type="button">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 13h6V4H4v9Zm0 7h6v-4H4v4Zm10 0h6v-9h-6v9Zm0-16v4h6V4h-6Z"/></svg>
+            <span>Overview</span>
+          </button>
+          <button class="nav-item" data-view="matching" type="button">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M7 7a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm10 0a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM7 9c-3.3 0-6 1.8-6 4v2h8.3a7.4 7.4 0 0 1 2.3-4.3A7.7 7.7 0 0 0 7 9Zm10 0a7.7 7.7 0 0 0-4.6 1.7 7.4 7.4 0 0 1 2.3 4.3H23v-2c0-2.2-2.7-4-6-4Zm-5 3a3 3 0 1 0 0 6 3 3 0 0 0 0-6Zm0 7c-3.3 0-6 1.8-6 4h12c0-2.2-2.7-4-6-4Z"/></svg>
+            <span>Matching studio</span>
+            <span class="nav-badge">1</span>
+          </button>
+          <button class="nav-item" data-view="triads" type="button">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 2 2 7v2l10 5 8-4v6h2V7L12 2Zm-6 9.1V16c0 2.2 2.7 4 6 4s6-1.8 6-4v-4.9l-6 3-6-3Z"/></svg>
+            <span>Triads</span>
+          </button>
+          <button class="nav-item" data-view="exceptions" type="button">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 2 1 21h22L12 2Zm1 15h-2v2h2v-2Zm0-6h-2v5h2v-5Z"/></svg>
+            <span>Exceptions</span>
+            <span class="nav-badge nav-badge-alert">90</span>
+          </button>
+        </nav>
+
+        <div class="sidebar-section">
+          <p class="sidebar-label">Program</p>
+          <button class="nav-item nav-item-secondary" data-view="participants" type="button">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10Zm0 2c-5 0-9 2.5-9 6v2h18v-2c0-3.5-4-6-9-6Z"/></svg>
+            <span>Participants</span>
+          </button>
+          <button class="nav-item nav-item-secondary" data-view="settings" type="button">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m19.4 13 .1-1-.1-1 2-1.6-2-3.4-2.4 1a8 8 0 0 0-1.7-1L15 3.5h-4L10.7 6a8 8 0 0 0-1.7 1L6.6 6l-2 3.4 2 1.6-.1 1 .1 1-2 1.6 2 3.4L9 17a8 8 0 0 0 1.7 1l.3 2.5h4l.3-2.5a8 8 0 0 0 1.7-1l2.4 1 2-3.4-2-1.6ZM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Z"/></svg>
+            <span>Rules & settings</span>
+          </button>
+        </div>
+
+        <div class="sidebar-footer">
+          <div class="season-progress">
+            <div class="season-progress-copy">
+              <span>Registration</span>
+              <strong>11 days left</strong>
+            </div>
+            <div class="progress-track"><span style="width: 68%"></span></div>
+            <small>Closes 1 Sep 2026</small>
+          </div>
+          <button class="profile-button" type="button" aria-label="Open profile menu">
+            <span class="avatar avatar-anne">AN</span>
+            <span><strong>Anne</strong><small>Program admin</small></span>
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m7 10 5 5 5-5H7Z"/></svg>
+          </button>
+        </div>
+      </aside>
+
+      <main class="main-content">
+        <header class="topbar">
+          <button class="mobile-menu" type="button" aria-label="Open navigation" aria-expanded="false">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6Zm0 5h18v2H3v-2Zm0 5h18v2H3v-2Z"/></svg>
+          </button>
+          <div class="topbar-context">
+            <span class="context-dot"></span>
+            <span>2026–27 cohort</span>
+            <span class="context-separator">/</span>
+            <strong id="current-view-label">Overview</strong>
+          </div>
+          <div class="topbar-actions">
+            <button class="language-toggle" id="language-toggle" type="button" aria-label="Switch to Traditional Chinese">
+              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm6.9 9h-3a14 14 0 0 0-1.2-5 8 8 0 0 1 4.2 5ZM12 4c.9 1.1 1.7 3.4 1.9 7h-3.8c.2-3.6 1-5.9 1.9-7ZM9.3 6a14 14 0 0 0-1.2 5h-3a8 8 0 0 1 4.2-5Zm-4.2 7h3a14 14 0 0 0 1.2 5 8 8 0 0 1-4.2-5Zm6.9 7c-.9-1.1-1.7-3.4-1.9-7h3.8c-.2 3.6-1 5.9-1.9 7Zm2.7-2a14 14 0 0 0 1.2-5h3a8 8 0 0 1-4.2 5Z"/></svg>
+              <span>中文</span>
+            </button>
+            <button class="icon-button" type="button" aria-label="Search">
+              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M10.5 3a7.5 7.5 0 1 0 4.7 13.3L20 21l1-1-4.7-4.8A7.5 7.5 0 0 0 10.5 3Zm0 2a5.5 5.5 0 1 1 0 11 5.5 5.5 0 0 1 0-11Z"/></svg>
+            </button>
+            <button class="icon-button notification-button" type="button" aria-label="Notifications">
+              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 22a2.5 2.5 0 0 0 2.4-2h-4.8a2.5 2.5 0 0 0 2.4 2Zm7-6v-5a7 7 0 0 0-5.5-6.8V2h-3v2.2A7 7 0 0 0 5 11v5l-2 2v1h18v-1l-2-2Z"/></svg>
+              <span></span>
+            </button>
+            <button class="ai-launch" type="button" data-open-ai>
+              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m12 2 1.7 5.3L19 9l-5.3 1.7L12 16l-1.7-5.3L5 9l5.3-1.7L12 2Zm7 12 .9 2.6 2.6.9-2.6.9L19 21l-.9-2.6-2.6-.9 2.6-.9L19 14Z"/></svg>
+              Ask CAC
+            </button>
+          </div>
+        </header>
+
+        <div class="mock-data-banner" role="note">
+          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M11 7h2v2h-2V7Zm0 4h2v6h-2v-6Zm1-9a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm0 2a8 8 0 1 1 0 16 8 8 0 0 1 0-16Z"/></svg>
+          Prototype using de-identified 21 Aug workbook aggregates and fictional names. No live Google Sheet is connected.
+          <button type="button" aria-label="Dismiss mock data notice">Dismiss</button>
+        </div>
+
+        <section class="view is-visible" id="view-overview" data-view-panel="overview" aria-labelledby="overview-title">
+          <div class="page-heading heading-with-action">
+            <div>
+              <p class="eyebrow">Friday, 21 August</p>
+              <h1 id="overview-title">Good morning, Anne.</h1>
+              <p>295 unique participants remain after deduplication. Resolve verification gaps before matching opens.</p>
+            </div>
+            <button class="primary-button" type="button" data-go-view="matching">
+              Review matching readiness
+              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m13 5-1.4 1.4 4.6 4.6H4v2h12.2l-4.6 4.6L13 19l7-7-7-7Z"/></svg>
+            </button>
+          </div>
+
+          <div class="metric-grid" aria-label="Program metrics">
+            <article class="metric-card metric-card-featured">
+              <div class="metric-label"><span>Form responses</span><span class="metric-trend">as of 21 Aug</span></div>
+              <div class="metric-value">326</div>
+              <div class="metric-foot"><span>295 unique participants</span><span>31 superseded</span></div>
+              <div class="mini-progress"><span style="width:91%"></span></div>
+            </article>
+            <article class="metric-card">
+              <div class="metric-label"><span>Unique participants</span><span class="status-dot status-dot-green"></span></div>
+              <div class="metric-value">295</div>
+              <div class="metric-foot"><span>294 committed</span><button type="button" data-go-view="participants">Review cohort</button></div>
+            </article>
+            <article class="metric-card">
+              <div class="metric-label"><span>Projected triads</span><span class="status-dot status-dot-sand"></span></div>
+              <div class="metric-value">98</div>
+              <div class="metric-foot"><span>294 provisional participants</span><span>0 unmatched</span></div>
+            </article>
+            <article class="metric-card metric-card-attention">
+              <div class="metric-label"><span>Preflight review</span><span class="status-dot status-dot-coral"></span></div>
+              <div class="metric-value">90</div>
+              <div class="metric-foot"><span>membership · timezone · location</span><button type="button" data-go-view="exceptions">Resolve</button></div>
+            </article>
+          </div>
+
+          <div class="overview-grid">
+            <article class="panel chapter-panel">
+              <div class="panel-header">
+                <div><p class="panel-kicker">Participant mix</p><h2>Chapter distribution</h2></div>
+                <div class="segmented-control" role="group" aria-label="Distribution metric">
+                  <button class="is-selected" type="button">Count</button><button type="button">Share</button>
+                </div>
+              </div>
+              <div class="bar-chart" aria-label="Top chapter participant counts">
+                <div class="bar-row"><span>Singapore</span><div><i style="width:100%"></i></div><strong>60</strong></div>
+                <div class="bar-row"><span>Jakarta</span><div><i style="width:60%"></i></div><strong>36</strong></div>
+                <div class="bar-row"><span>Australasia</span><div><i style="width:42%"></i></div><strong>25</strong></div>
+                <div class="bar-row"><span>Philippines</span><div><i style="width:42%"></i></div><strong>25</strong></div>
+                <div class="bar-row"><span>Malaysia</span><div><i style="width:40%"></i></div><strong>24</strong></div>
+                <div class="bar-row"><span>Hong Kong</span><div><i style="width:33%"></i></div><strong>20</strong></div>
+                <div class="bar-row"><span>Hyderabad</span><div><i style="width:32%"></i></div><strong>19</strong></div>
+                <div class="bar-row bar-row-muted"><span>Other chapters</span><div><i style="width:100%"></i></div><strong>93</strong></div>
+              </div>
+              <div class="chart-note">
+                <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3 2 21h20L12 3Zm1 14h-2v2h2v-2Zm0-7h-2v5h2v-5Z"/></svg>
+                302 Chapter selections across 295 unique participants. Six people selected more than one Chapter.
+              </div>
+            </article>
+
+            <article class="panel attention-panel">
+              <div class="panel-header">
+                <div><p class="panel-kicker">Action queue</p><h2>Needs your attention</h2></div>
+                <button class="text-button" type="button" data-go-view="exceptions">Open preflight queue</button>
+              </div>
+              <div class="attention-list">
+                <button class="attention-item" type="button" data-go-view="participants">
+                  <span class="attention-icon attention-icon-coral"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3 2 21h20L12 3Zm1 14h-2v2h2v-2Zm0-7h-2v5h2v-5Z"/></svg></span>
+                  <span><strong>28 duplicate email groups</strong><small>27 changed matching-related answers</small></span>
+                  <span class="attention-meta">Keep latest</span>
+                  <svg class="chevron" aria-hidden="true" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6-1.4 1.4L12.2 12l-4.6 4.6L9 18Z"/></svg>
+                </button>
+                <button class="attention-item" type="button" data-go-view="exceptions">
+                  <span class="attention-icon attention-icon-sand"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 1a8 8 0 0 0-8 8c0 5.8 8 14 8 14s8-8.2 8-14a8 8 0 0 0-8-8Zm0 11a3 3 0 1 1 0-6 3 3 0 0 1 0 6Z"/></svg></span>
+                  <span><strong>3 local-language-only requests</strong><small>Vietnamese, Mandarin and Cantonese</small></span>
+                  <span class="attention-meta">Hard rule</span>
+                  <svg class="chevron" aria-hidden="true" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6-1.4 1.4L12.2 12l-4.6 4.6L9 18Z"/></svg>
+                </button>
+                <button class="attention-item" type="button" data-go-view="matching">
+                  <span class="attention-icon attention-icon-teal"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M7 7a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm10 0a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM7 9c-3.3 0-6 1.8-6 4v2h8.3a7.4 7.4 0 0 1 2.3-4.3A7.7 7.7 0 0 0 7 9Zm10 0a7.7 7.7 0 0 0-4.6 1.7 7.4 7.4 0 0 1 2.3 4.3H23v-2c0-2.2-2.7-4-6-4Z"/></svg></span>
+                  <span><strong>New Zealand data needs validation</strong><small>6 UTC+12 profiles · 13 Australasia locations blank</small></span>
+                  <span class="attention-meta">Before matching</span>
+                  <svg class="chevron" aria-hidden="true" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6-1.4 1.4L12.2 12l-4.6 4.6L9 18Z"/></svg>
+                </button>
+              </div>
+            </article>
+
+            <article class="panel readiness-panel">
+              <div class="panel-header">
+                <div><p class="panel-kicker">Launch plan</p><h2>Matching readiness</h2></div>
+                <span class="readiness-score"><strong>72%</strong> ready</span>
+              </div>
+              <ol class="readiness-list">
+                <li class="is-complete"><span>1</span><div><strong>Registration form live</strong><small>326 responses synced</small></div><b>Done</b></li>
+                <li class="is-current"><span>2</span><div><strong>Clean participant data</strong><small>90 unique profiles need review</small></div><b>In progress</b></li>
+                <li><span>3</span><div><strong>Chapter verification</strong><small>2–12 September</small></div><b>Upcoming</b></li>
+                <li><span>4</span><div><strong>Generate triad draft</strong><small>Target: 18 September</small></div><b>Upcoming</b></li>
+              </ol>
+            </article>
+
+            <article class="panel timeline-panel">
+              <div class="panel-header">
+                <div><p class="panel-kicker">Next 30 days</p><h2>Program milestones</h2></div>
+              </div>
+              <ol class="timeline">
+                <li><time datetime="2026-09-01"><strong>01</strong><span>Sep</span></time><div><strong>Registration closes</strong><small>Final participant sync at 23:59</small></div></li>
+                <li><time datetime="2026-09-12"><strong>12</strong><span>Sep</span></time><div><strong>Verification deadline</strong><small>All chapters confirm eligibility</small></div></li>
+                <li><time datetime="2026-09-16"><strong>16</strong><span>Sep</span></time><div><strong>Participant orientation</strong><small>Roles, ethics and ways of working</small></div></li>
+                <li><time datetime="2026-09-21"><strong>21</strong><span>Sep</span></time><div><strong>Triad introductions sent</strong><small>Coordinators copied automatically</small></div></li>
+              </ol>
+            </article>
+          </div>
+        </section>
+
+        <section class="view" id="view-matching" data-view-panel="matching" aria-labelledby="matching-title">
+          <div class="page-heading heading-with-action">
+            <div>
+              <p class="eyebrow">Draft run #04 · not published</p>
+              <h1 id="matching-title">Matching studio</h1>
+              <p>Review feasible triads, understand trade-offs, then lock the draft before invitations are sent.</p>
+            </div>
+            <div class="heading-actions">
+              <button class="secondary-button" type="button" data-action="compare-runs">Compare runs</button>
+              <button class="primary-button" id="run-matching-button" type="button">
+                <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 2 8.5 8.5 2 12l6.5 3.5L12 22l3.5-6.5L22 12l-6.5-3.5L12 2Z"/></svg>
+                Run matching
+              </button>
+            </div>
+          </div>
+
+          <div class="matching-summary">
+            <div><span>Provisional pool</span><strong>294</strong><small>pending verification</small></div>
+            <div><span>Proposed</span><strong>98</strong><small>triads</small></div>
+            <div><span>Cross-chapter</span><strong>97</strong><small>simulation result</small></div>
+            <div><span>Chapter exception</span><strong>1</strong><small>Vietnamese-only</small></div>
+            <div class="matching-health"><span>Simulation coverage</span><strong>100%</strong><div class="mini-progress"><span style="width:100%"></span></div></div>
+          </div>
+
+          <div class="matching-layout">
+            <aside class="rules-panel panel">
+              <div class="panel-header"><div><p class="panel-kicker">Run settings</p><h2>Matching rules</h2></div><button class="text-button" type="button">Reset</button></div>
+              <div class="rule-group">
+                <div class="rule-heading"><strong>Required</strong><span>All must pass</span></div>
+                <label class="rule-toggle"><span><strong>Common language</strong><small>One coaching language shared by all 3</small></span><input type="checkbox" checked /><i></i></label>
+                <label class="rule-toggle"><span><strong>Shared availability</strong><small>At least one 60-minute window</small></span><input type="checkbox" checked /><i></i></label>
+                <label class="rule-toggle"><span><strong>Verified eligibility</strong><small>ICF membership and APAC residence</small></span><input type="checkbox" checked /><i></i></label>
+              </div>
+              <div class="rule-group">
+                <div class="rule-heading"><strong>Optimise</strong><span>Drag to prioritise</span></div>
+                <div class="weighted-rule"><span class="drag-handle">⋮⋮</span><div><strong>Cross-chapter diversity</strong><small>Highest soft priority after hard rules</small></div><b>45%</b></div>
+                <div class="weighted-rule"><span class="drag-handle">⋮⋮</span><div><strong>Comfortable local time</strong><small>Avoid early morning and late evening</small></div><b>30%</b></div>
+                <div class="weighted-rule"><span class="drag-handle">⋮⋮</span><div><strong>Language preference</strong><small>Prefer first-choice coaching language</small></div><b>20%</b></div>
+                <div class="weighted-rule"><span class="drag-handle">⋮⋮</span><div><strong>Prior connection</strong><small>Avoid repeat pairings</small></div><b>5%</b></div>
+              </div>
+              <button class="secondary-button full-width" type="button" data-action="save-rule-set">Save as rule set</button>
+            </aside>
+
+            <div class="candidate-area">
+              <div class="candidate-toolbar">
+                <label class="search-field">
+                  <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M10.5 3a7.5 7.5 0 1 0 4.7 13.3L20 21l1-1-4.7-4.8A7.5 7.5 0 0 0 10.5 3Zm0 2a5.5 5.5 0 1 1 0 11 5.5 5.5 0 0 1 0-11Z"/></svg>
+                  <input id="candidate-search" type="search" placeholder="Search triad, participant or chapter" />
+                </label>
+                <div class="filter-row">
+                  <button class="filter-button is-active" type="button" data-match-filter="all">All <span>98</span></button>
+                  <button class="filter-button" type="button" data-match-filter="strong">Cross-chapter <span>97</span></button>
+                  <button class="filter-button" type="button" data-match-filter="review">Exception <span>1</span></button>
+                </div>
+                <button class="icon-button border-button" type="button" aria-label="More filters"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 7h10v2H4V7Zm0 8h6v2H4v-2Zm14-4h2v2h-2v-2Zm-2-2h6V7h-6V5h-2v6h2V9Zm-2 8h8v-2h-8v-2h-2v6h2v-2Z"/></svg></button>
+              </div>
+
+              <div class="candidate-list" id="candidate-list">
+                <article class="candidate-card" data-score="94" data-kind="strong" data-search="T-014 Singapore Mumbai Taiwan Maya Arjun Mei">
+                  <button class="candidate-main" type="button" data-open-triad="T-014">
+                    <span class="score-ring score-high"><strong>94</strong><small>match</small></span>
+                    <span class="candidate-copy">
+                      <span class="candidate-title"><strong>Triad T-014</strong><span class="status-pill status-pill-green">Strong match</span></span>
+                      <span class="people-stack">
+                        <span><i class="avatar avatar-maya">ML</i><b>Maya Lim</b><small>Singapore · UTC+8</small></span>
+                        <span><i class="avatar avatar-arjun">AR</i><b>Arjun Rao</b><small>Mumbai · UTC+5:30</small></span>
+                        <span><i class="avatar avatar-mei">MC</i><b>Mei Chen</b><small>Taiwan · UTC+8</small></span>
+                      </span>
+                      <span class="match-signals"><span>English</span><span>3 chapters</span><span>Tue 19:30 SGT</span></span>
+                    </span>
+                    <svg class="chevron" aria-hidden="true" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6-1.4 1.4L12.2 12l-4.6 4.6L9 18Z"/></svg>
+                  </button>
+                  <div class="candidate-actions"><span>All required rules passed</span><button type="button" data-approve="T-014">Approve</button></div>
+                </article>
+
+                <article class="candidate-card" data-score="88" data-kind="strong" data-search="T-031 Jakarta Hong Kong Philippines Dewi Jason Sofia">
+                  <button class="candidate-main" type="button" data-open-triad="T-031">
+                    <span class="score-ring score-high"><strong>88</strong><small>match</small></span>
+                    <span class="candidate-copy">
+                      <span class="candidate-title"><strong>Triad T-031</strong><span class="status-pill status-pill-green">Strong match</span></span>
+                      <span class="people-stack">
+                        <span><i class="avatar avatar-dewi">DP</i><b>Dewi Putri</b><small>Jakarta · UTC+7</small></span>
+                        <span><i class="avatar avatar-jason">JL</i><b>Jason Lee</b><small>Hong Kong · UTC+8</small></span>
+                        <span><i class="avatar avatar-sofia">SR</i><b>Sofia Reyes</b><small>Philippines · UTC+8</small></span>
+                      </span>
+                      <span class="match-signals"><span>English</span><span>3 chapters</span><span>Sat 10:00 HKT</span></span>
+                    </span>
+                    <svg class="chevron" aria-hidden="true" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6-1.4 1.4L12.2 12l-4.6 4.6L9 18Z"/></svg>
+                  </button>
+                  <div class="candidate-actions"><span>All required rules passed</span><button type="button" data-approve="T-031">Approve</button></div>
+                </article>
+
+                <article class="candidate-card candidate-card-review" data-score="74" data-kind="review" data-search="T-L01 Vietnam Linh Minh Anh Vietnamese">
+                  <button class="candidate-main" type="button" data-open-triad="T-L01">
+                    <span class="score-ring score-medium"><strong>74</strong><small>match</small></span>
+                    <span class="candidate-copy">
+                      <span class="candidate-title"><strong>Triad T-L01</strong><span class="status-pill status-pill-sand">Language exception</span></span>
+                      <span class="people-stack">
+                        <span><i class="avatar avatar-hiro">LT</i><b>Linh Tran</b><small>Vietnam · UTC+7</small></span>
+                        <span><i class="avatar avatar-yuna">MN</i><b>Minh Nguyen</b><small>Vietnam · UTC+7</small></span>
+                        <span><i class="avatar avatar-kenji">AP</i><b>Anh Pham</b><small>Vietnam · UTC+7</small></span>
+                      </span>
+                      <span class="match-signals"><span>Vietnamese only</span><span class="signal-warning">1 chapter</span><span>4 shared windows</span></span>
+                    </span>
+                    <svg class="chevron" aria-hidden="true" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6-1.4 1.4L12.2 12l-4.6 4.6L9 18Z"/></svg>
+                  </button>
+                  <div class="candidate-actions"><span>Language requirement overrides cross-chapter priority</span><button type="button" data-approve="T-L01">Approve exception</button></div>
+                </article>
+
+                <article class="candidate-card candidate-card-review" data-score="64" data-kind="review" data-search="T-082 Bengaluru Chennai Delhi Priya Anika Rohan">
+                  <button class="candidate-main" type="button" data-open-triad="T-082">
+                    <span class="score-ring score-low"><strong>64</strong><small>match</small></span>
+                    <span class="candidate-copy">
+                      <span class="candidate-title"><strong>Triad T-082</strong><span class="status-pill status-pill-coral">Time risk</span></span>
+                      <span class="people-stack">
+                        <span><i class="avatar avatar-priya">PN</i><b>Priya Nair</b><small>Bengaluru · UTC+5:30</small></span>
+                        <span><i class="avatar avatar-anika">AV</i><b>Anika Verma</b><small>Chennai · UTC+5:30</small></span>
+                        <span><i class="avatar avatar-rohan">RK</i><b>Rohan Khanna</b><small>Delhi NCR · UTC+5:30</small></span>
+                      </span>
+                      <span class="match-signals"><span>English</span><span>3 chapters</span><span class="signal-warning">Only 1 shared slot</span></span>
+                    </span>
+                    <svg class="chevron" aria-hidden="true" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6-1.4 1.4L12.2 12l-4.6 4.6L9 18Z"/></svg>
+                  </button>
+                  <div class="candidate-actions"><span>Confirm availability before approval</span><button type="button" data-approve="T-082">Approve</button></div>
+                </article>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="view" id="view-triads" data-view-panel="triads" aria-labelledby="triads-title">
+          <div class="page-heading heading-with-action">
+            <div><p class="eyebrow">2026–27 cohort</p><h1 id="triads-title">Triad operations</h1><p>Track one meeting per month. Missed months cannot be recovered later.</p></div>
+            <div class="heading-actions"><button class="secondary-button" type="button">Export status</button><button class="primary-button" type="button">Send monthly nudge</button></div>
+          </div>
+          <div class="triad-status-strip">
+            <button class="is-active" type="button" data-triad-filter="all"><strong>98</strong><span>All triads</span></button>
+            <button type="button" data-triad-filter="on-track"><strong>82</strong><span>On track</span></button>
+            <button type="button" data-triad-filter="attention"><strong>11</strong><span>Needs attention</span></button>
+            <button type="button" data-triad-filter="rematch"><strong>5</strong><span>Rematching</span></button>
+          </div>
+          <article class="panel triad-table-panel">
+            <div class="table-toolbar">
+              <label class="search-field"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M10.5 3a7.5 7.5 0 1 0 4.7 13.3L20 21l1-1-4.7-4.8A7.5 7.5 0 0 0 10.5 3Zm0 2a5.5 5.5 0 1 1 0 11 5.5 5.5 0 0 1 0-11Z"/></svg><input id="triad-search" type="search" placeholder="Search triads or participants" /></label>
+              <span class="table-summary">Showing 6 of 98 projected triads</span>
+            </div>
+            <div class="responsive-table">
+              <table>
+                <thead><tr><th>Triad</th><th>Participants</th><th>Oct</th><th>Nov</th><th>Dec</th><th>Jan</th><th>Feb</th><th>Mar</th><th>Status</th><th></th></tr></thead>
+                <tbody id="triad-table-body">
+                  <tr data-kind="on-track" data-search="T-014 Maya Arjun Mei"><td><strong>T-014</strong><small>Option 2</small></td><td><div class="compact-avatars"><i class="avatar avatar-maya">ML</i><i class="avatar avatar-arjun">AR</i><i class="avatar avatar-mei">MC</i><span>Maya, Arjun, Mei</span></div></td><td><span class="month-status done">Done</span></td><td><span class="month-status scheduled">22 Nov</span></td><td><span class="month-status empty">—</span></td><td><span class="month-status empty">—</span></td><td><span class="month-status empty">—</span></td><td><span class="month-status empty">—</span></td><td><span class="status-pill status-pill-green">On track</span></td><td><button class="row-action" data-open-triad="T-014" aria-label="Open T-014">•••</button></td></tr>
+                  <tr data-kind="on-track" data-search="T-031 Dewi Jason Sofia"><td><strong>T-031</strong><small>Option 1</small></td><td><div class="compact-avatars"><i class="avatar avatar-dewi">DP</i><i class="avatar avatar-jason">JL</i><i class="avatar avatar-sofia">SR</i><span>Dewi, Jason, Sofia</span></div></td><td><span class="month-status done">Done</span></td><td><span class="month-status done">Done</span></td><td><span class="month-status empty">—</span></td><td><span class="month-status empty">—</span></td><td><span class="month-status empty">—</span></td><td><span class="month-status empty">—</span></td><td><span class="status-pill status-pill-green">On track</span></td><td><button class="row-action" data-open-triad="T-031" aria-label="Open T-031">•••</button></td></tr>
+                  <tr data-kind="attention" data-search="T-044 Ahmad Nur Chloe"><td><strong>T-044</strong><small>Option 2</small></td><td><div class="compact-avatars"><i class="avatar avatar-ahmad">AK</i><i class="avatar avatar-nur">NA</i><i class="avatar avatar-chloe">CW</i><span>Ahmad, Nur, Chloe</span></div></td><td><span class="month-status done">Done</span></td><td><span class="month-status missed">Missing</span></td><td><span class="month-status empty">—</span></td><td><span class="month-status empty">—</span></td><td><span class="month-status empty">—</span></td><td><span class="month-status empty">—</span></td><td><span class="status-pill status-pill-coral">At risk</span></td><td><button class="row-action" data-open-triad="T-044" aria-label="Open T-044">•••</button></td></tr>
+                  <tr data-kind="rematch" data-search="T-052 Linh Hana Ravi"><td><strong>T-052</strong><small>Option 1</small></td><td><div class="compact-avatars"><i class="avatar avatar-linh">LT</i><i class="avatar avatar-hana">HK</i><i class="avatar avatar-ravi">RS</i><span>Linh, Hana, Ravi</span></div></td><td><span class="month-status done">Done</span></td><td><span class="month-status issue">Withdrawn</span></td><td><span class="month-status empty">—</span></td><td><span class="month-status empty">—</span></td><td><span class="month-status empty">—</span></td><td><span class="month-status empty">—</span></td><td><span class="status-pill status-pill-sand">Rematching</span></td><td><button class="row-action" data-open-triad="T-052" aria-label="Open T-052">•••</button></td></tr>
+                  <tr data-kind="on-track" data-search="T-067 Hiro Yuna Kenji"><td><strong>T-067</strong><small>Option 2</small></td><td><div class="compact-avatars"><i class="avatar avatar-hiro">HS</i><i class="avatar avatar-yuna">YP</i><i class="avatar avatar-kenji">KT</i><span>Hiro, Yuna, Kenji</span></div></td><td><span class="month-status done">Done</span></td><td><span class="month-status scheduled">28 Nov</span></td><td><span class="month-status empty">—</span></td><td><span class="month-status empty">—</span></td><td><span class="month-status empty">—</span></td><td><span class="month-status empty">—</span></td><td><span class="status-pill status-pill-green">On track</span></td><td><button class="row-action" data-open-triad="T-067" aria-label="Open T-067">•••</button></td></tr>
+                  <tr data-kind="attention" data-search="T-082 Priya Anika Rohan"><td><strong>T-082</strong><small>Option 1</small></td><td><div class="compact-avatars"><i class="avatar avatar-priya">PN</i><i class="avatar avatar-anika">AV</i><i class="avatar avatar-rohan">RK</i><span>Priya, Anika, Rohan</span></div></td><td><span class="month-status done">Done</span></td><td><span class="month-status late">Not set</span></td><td><span class="month-status empty">—</span></td><td><span class="month-status empty">—</span></td><td><span class="month-status empty">—</span></td><td><span class="month-status empty">—</span></td><td><span class="status-pill status-pill-coral">Needs action</span></td><td><button class="row-action" data-open-triad="T-082" aria-label="Open T-082">•••</button></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </article>
+        </section>
+
+        <section class="view" id="view-exceptions" data-view-panel="exceptions" aria-labelledby="exceptions-title">
+          <div class="page-heading heading-with-action">
+            <div><p class="eyebrow">Cohort preflight · 21 August</p><h1 id="exceptions-title">Exception queue</h1><p>Resolve data and policy cases that rules cannot safely decide before publishing matches.</p></div>
+            <button class="secondary-button" type="button" data-open-ai>Ask CAC to prioritise</button>
+          </div>
+          <div class="exception-layout">
+            <div class="exception-filters panel">
+              <button class="is-active" type="button" data-exception-filter="all"><span>All types</span><strong>5</strong></button>
+              <button type="button" data-exception-filter="response"><span>Data quality</span><strong>2</strong></button>
+              <button type="button" data-exception-filter="language"><span>Language</span><strong>1</strong></button>
+              <button type="button" data-exception-filter="rematch"><span>Timezone</span><strong>1</strong></button>
+              <button type="button" data-exception-filter="policy"><span>Policy</span><strong>1</strong></button>
+            </div>
+            <div class="exception-list" id="exception-list">
+              <article class="exception-card urgent" data-kind="response">
+                <div class="exception-marker"><span>Data cleanup</span><small>Duplicates</small></div>
+                <div class="exception-body"><div class="exception-title"><span class="case-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 4h16v12H6l-4 4V6a2 2 0 0 1 2-2Zm2 5v2h12V9H6Z"/></svg></span><div><strong>28 email groups submitted more than once</strong><small>31 older submissions · 27 groups changed matching fields</small></div></div><p>Use the latest response as the provisional record, then preserve prior submissions in an audit log instead of deleting them.</p><div class="exception-actions"><button class="primary-button small-button" type="button" data-resolve-action="Preview deduplication">Preview deduplication</button><button class="text-button" type="button">Compare changes</button></div></div>
+              </article>
+              <article class="exception-card" data-kind="response">
+                <div class="exception-marker"><span>Verification</span><small>Membership</small></div>
+                <div class="exception-body"><div class="exception-title"><span class="case-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6V2Zm8 2H8v16h10V8h-4V4Zm-4 8h6v2h-6v-2Zm0 4h6v2h-6v-2Z"/></svg></span><div><strong>90 unique profiles require preflight review</strong><small>61 missing membership details · 21 expire before programme start</small></div></div><p>Chapter coordinators should confirm membership, residence and renewal status before these participants become eligible for a published match.</p><div class="exception-actions"><button class="primary-button small-button" type="button" data-resolve-action="Open verification queue">Open verification queue</button><button class="text-button" type="button">Group by Chapter</button></div></div>
+              </article>
+              <article class="exception-card" data-kind="language">
+                <div class="exception-marker"><span>Best effort</span><small>Language</small></div>
+                <div class="exception-body"><div class="exception-title"><span class="case-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18Zm6.9 8h-3a14 14 0 0 0-1.2-5 7 7 0 0 1 4.2 5ZM12 5c.8 1 1.6 3 1.8 6h-3.6C10.4 8 11.2 6 12 5Zm-2.7 1a14 14 0 0 0-1.2 5h-3a7 7 0 0 1 4.2-5Zm-4.2 7h3a14 14 0 0 0 1.2 5 7 7 0 0 1-4.2-5Zm6.9 6c-.8-1-1.6-3-1.8-6h3.6c-.2 3-1 5-1.8 6Zm2.7-1a14 14 0 0 0 1.2-5h3a7 7 0 0 1-4.2 5Z"/></svg></span><div><strong>Vietnamese-only matching conflicts with Chapter diversity</strong><small>5 Vietnamese speakers · no three-Chapter combination</small></div></div><p>A valid Vietnamese-language triad is possible, but all three members must come from the Vietnam Chapter. Language should remain the hard constraint.</p><div class="exception-actions"><button class="primary-button small-button" type="button" data-open-triad="T-L01">Review exception triad</button><button class="text-button" type="button">Ask coordinator</button></div></div>
+              </article>
+              <article class="exception-card" data-kind="rematch">
+                <div class="exception-marker"><span>Verify first</span><small>New Zealand</small></div>
+                <div class="exception-body"><div class="exception-title"><span class="case-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M7 7a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm10 0a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM7 9c-3.3 0-6 1.8-6 4v2h8.3a7.4 7.4 0 0 1 2.3-4.3A7.7 7.7 0 0 0 7 9Zm10 0a7.7 7.7 0 0 0-4.6 1.7 7.4 7.4 0 0 1 2.3 4.3H23v-2c0-2.2-2.7-4-6-4Z"/></svg></span><div><strong>New Zealand answers and GMT offsets disagree</strong><small>6 UTC+12 profiles · only one overlaps the NZ location answer</small></div></div><p>Confirm the participant’s actual city or IANA timezone. A fixed GMT+12 value will be one hour wrong throughout the programme for someone in Auckland.</p><div class="exception-actions"><button class="primary-button small-button" type="button" data-resolve-action="Open timezone verification">Open verification list</button><button class="text-button" type="button">Draft coordinator email</button></div></div>
+              </article>
+              <article class="exception-card" data-kind="policy">
+                <div class="exception-marker"><span>Policy</span><small>CCEU</small></div>
+                <div class="exception-body"><div class="exception-title"><span class="case-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6V2Zm8 2H8v16h10V8h-4V4Zm-4 8h6v2h-6v-2Zm0 4h6v2h-6v-2Z"/></svg></span><div><strong>Incomplete-triad CCEU rule is not final</strong><small>Awaiting written confirmation from ICF Global</small></div></div><p>Completion can be recorded, but CCEU eligibility should remain under manual review until policy is confirmed.</p><div class="exception-actions"><button class="secondary-button small-button" type="button" data-resolve-action="Keep manual review">Keep manual review</button><button class="text-button" type="button">Open policy note</button></div></div>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        <section class="view" id="view-participants" data-view-panel="participants" aria-labelledby="participants-title">
+          <div class="page-heading heading-with-action"><div><p class="eyebrow">326 responses · 295 unique</p><h1 id="participants-title">Participant verification</h1><p>Confirm membership, residence, timezone and language before a participant enters the matching pool.</p></div><button class="primary-button" type="button">Sync form responses</button></div>
+          <div class="empty-state panel"><span class="large-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10Zm0 2c-5 0-9 2.5-9 6v2h18v-2c0-3.5-4-6-9-6Z"/></svg></span><h2>Participant workspace</h2><p>This mockup focuses on the coordinator’s primary workflow. A full participant table would support chapter-scoped verification and bulk follow-up.</p><button class="secondary-button" type="button" data-go-view="overview">Back to overview</button></div>
+        </section>
+
+        <section class="view" id="view-settings" data-view-panel="settings" aria-labelledby="settings-title">
+          <div class="page-heading"><p class="eyebrow">Configuration</p><h1 id="settings-title">Rules & settings</h1><p>Keep programme policy configurable while CCEU and incomplete-triad rules are being confirmed.</p></div>
+          <div class="settings-grid">
+            <article class="panel setting-card"><span class="setting-index">01</span><h2>Eligibility</h2><p>ICF membership, APAC chapter, APAC residence and active commitment.</p><button class="text-button" type="button">Edit requirements</button></article>
+            <article class="panel setting-card"><span class="setting-index">02</span><h2>Matching weights</h2><p>Language, common availability, local time and cross-chapter diversity.</p><button class="text-button" type="button" data-go-view="matching">Open rule set</button></article>
+            <article class="panel setting-card"><span class="setting-index">03</span><h2>Notifications</h2><p>Introduction, day-five reminder, monthly nudge and escalation templates.</p><button class="text-button" type="button">Manage templates</button></article>
+            <article class="panel setting-card"><span class="setting-index">04</span><h2>Programme policy</h2><p>Rotation options, missed-month handling, AI consent and CCEU review.</p><button class="text-button" type="button">Review policies</button></article>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <div class="overlay" id="overlay" hidden></div>
+
+    <aside class="detail-drawer" id="triad-drawer" aria-hidden="true" aria-labelledby="drawer-title">
+      <div class="drawer-header">
+        <div><p class="panel-kicker">Proposed triad</p><h2 id="drawer-title">T-014</h2></div>
+        <button class="icon-button" id="close-drawer" type="button" aria-label="Close triad detail"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m6.4 5 5.6 5.6L17.6 5 19 6.4 13.4 12l5.6 5.6-1.4 1.4-5.6-5.6L6.4 19 5 17.6l5.6-5.6L5 6.4 6.4 5Z"/></svg></button>
+      </div>
+      <div class="drawer-scroll">
+        <div class="drawer-score"><span class="score-ring score-high"><strong>94</strong><small>match</small></span><div><strong>Strong match</strong><p>All required rules pass. Three chapters and two time zones are represented.</p></div></div>
+        <section class="drawer-section"><h3>Members</h3><div class="drawer-members">
+          <div><i class="avatar avatar-maya">ML</i><span><strong>Maya Lim</strong><small>Singapore · English</small></span><b>UTC+8</b></div>
+          <div><i class="avatar avatar-arjun">AR</i><span><strong>Arjun Rao</strong><small>Mumbai · English, Hindi</small></span><b>UTC+5:30</b></div>
+          <div><i class="avatar avatar-mei">MC</i><span><strong>Mei Chen</strong><small>Taiwan · English, Mandarin</small></span><b>UTC+8</b></div>
+        </div></section>
+        <section class="drawer-section"><h3>Why this works</h3><div class="score-breakdown">
+          <div><span>Shared availability</span><div><i style="width:100%"></i></div><b>30/30</b></div>
+          <div><span>Cross-chapter mix</span><div><i style="width:100%"></i></div><b>30/30</b></div>
+          <div><span>Language preference</span><div><i style="width:96%"></i></div><b>24/25</b></div>
+          <div><span>Prior connection</span><div><i style="width:67%"></i></div><b>10/15</b></div>
+        </div></section>
+        <section class="drawer-section"><h3>Best shared window</h3><div class="timezone-card">
+          <div><span>Singapore · Maya</span><strong>Tue 7:30 PM</strong></div>
+          <div><span>Mumbai · Arjun</span><strong>Tue 5:00 PM</strong></div>
+          <div><span>Taipei · Mei</span><strong>Tue 7:30 PM</strong></div>
+        </div></section>
+        <section class="drawer-section"><div class="section-title-row"><h3>Six-session rotation</h3><span>Option 2</span></div><div class="rotation-grid"><div><b>Session</b><b>Coach</b><b>Coachee</b><b>Observer</b></div><div><span>1 · Oct</span><span>Maya</span><span>Arjun</span><span>Mei</span></div><div><span>2 · Nov</span><span>Arjun</span><span>Mei</span><span>Maya</span></div><div><span>3 · Dec</span><span>Mei</span><span>Maya</span><span>Arjun</span></div><div><span>4 · Jan</span><span>Maya</span><span>Mei</span><span>Arjun</span></div><div><span>5 · Feb</span><span>Arjun</span><span>Maya</span><span>Mei</span></div><div><span>6 · Mar</span><span>Mei</span><span>Arjun</span><span>Maya</span></div></div></section>
+      </div>
+      <div class="drawer-footer"><button class="secondary-button" type="button" data-action="find-alternative">Find alternative</button><button class="primary-button" type="button" data-approve="T-014">Approve triad</button></div>
+    </aside>
+
+    <aside class="ai-drawer" id="ai-drawer" aria-hidden="true" aria-labelledby="ai-title">
+      <div class="drawer-header ai-header">
+        <div class="ai-title"><span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m12 2 1.7 5.3L19 9l-5.3 1.7L12 16l-1.7-5.3L5 9l5.3-1.7L12 2Z"/></svg></span><div><h2 id="ai-title">Ask CAC</h2><p>Operations assistant · demo</p></div></div>
+        <button class="icon-button" id="close-ai" type="button" aria-label="Close Ask CAC"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m6.4 5 5.6 5.6L17.6 5 19 6.4 13.4 12l5.6 5.6-1.4 1.4-5.6-5.6L6.4 19 5 17.6l5.6-5.6L5 6.4 6.4 5Z"/></svg></button>
+      </div>
+      <div class="ai-body" id="ai-messages">
+        <div class="ai-intro"><span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m12 2 1.7 5.3L19 9l-5.3 1.7L12 16l-1.7-5.3L5 9l5.3-1.7L12 2Z"/></svg></span><h3>What needs attention?</h3><p>I can explain matching decisions, find stalled triads and draft coordinator follow-ups.</p></div>
+        <div class="prompt-suggestions">
+          <button type="button" data-ai-prompt="Show the most urgent cases">Show the most urgent cases</button>
+          <button type="button" data-ai-prompt="Why are 12 participants unmatched?">Why are 12 participants unmatched?</button>
+          <button type="button" data-ai-prompt="Preview the lowest-impact rematch for T-052">Preview a rematch for T-052</button>
+        </div>
+      </div>
+      <form class="ai-composer" id="ai-form">
+        <label for="ai-input">Ask about this cohort</label>
+        <div><textarea id="ai-input" rows="1" placeholder="e.g. Which chapters need verification follow-up?"></textarea><button type="submit" aria-label="Send message"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m3 20 18-8L3 4v6l13 2-13 2v6Z"/></svg></button></div>
+        <small>Demo responses only. Changes always require confirmation.</small>
+      </form>
+    </aside>
+
+    <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="true"></div>
+
+    <script src="i18n.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
