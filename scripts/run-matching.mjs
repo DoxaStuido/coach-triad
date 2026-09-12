@@ -1,0 +1,26 @@
+import fs from "node:fs/promises";
+import vm from "node:vm";
+import { execFileSync } from "node:child_process";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const [source, destination, overridesPath] = process.argv.slice(2);
+if (!source || !destination || !process.env.CAC_PYTHON) throw new Error("Usage: CAC_PYTHON=<bundled python> node scripts/run-matching.mjs <source.xlsx> <private output directory> [overrides.json]");
+const out = path.resolve(destination);
+if (!out.startsWith(path.join(root, "outputs") + path.sep)) throw new Error("Private results must stay under ignored outputs/");
+const input = JSON.parse(execFileSync(process.env.CAC_PYTHON, [path.join(root, "scripts/read-roster.py"), source], { encoding: "utf8", maxBuffer: 10 * 1024 * 1024 }));
+const context = vm.createContext({ Intl, Date, console });
+for (const file of ["MatchingCore", "NormalizationCore", "ReviewMatching"]) vm.runInContext(await fs.readFile(path.join(root, `apps-script/src/${file}.gs`), "utf8"), context);
+const overrides = overridesPath ? JSON.parse(await fs.readFile(overridesPath, "utf8")) : {};
+const started = Date.now();
+const report = context.CacReviewMatching.run(input, overrides);
+await fs.mkdir(out, { recursive: true });
+await fs.writeFile(path.join(out, "matching-review.json"), JSON.stringify(report, null, 2), { mode: 0o600 });
+// Self-contained private review page, never copied to public/ or deployment output.
+const html = await fs.readFile(path.join(root, "public/review/index.html"), "utf8");
+const css = await fs.readFile(path.join(root, "public/review/review.css"), "utf8");
+const app = await fs.readFile(path.join(root, "public/review/review.js"), "utf8");
+const engine = await fs.readFile(path.join(root, "public/review/engine.js"), "utf8");
+const packed = JSON.stringify(report).replace(/</g, "\\u003c").replace(/\u2028/g, "\\u2028").replace(/\u2029/g, "\\u2029");
+await fs.writeFile(path.join(out, "review.html"), html.replace('<link rel="stylesheet" href="review.css">', `<style>${css}</style>`).replace('<!--ENGINE-->', `<script id="embedded-engine" type="text/plain">${engine.replace(/<\/script/gi, "<\\/script")}</script>`).replace('<script src="review.js" defer></script>', `<script id="initial-report" type="application/json">${packed}</script><script>${app}</script>`), { mode: 0o600 });
+console.log(JSON.stringify({ ...report.summary, seconds: (Date.now() - started) / 1000, output: out }, null, 2));

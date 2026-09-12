@@ -3,8 +3,8 @@ export default function Home() {
     <main className="mockup-shell">
       <iframe
         className="mockup-frame"
-        src="/mockup/index.html"
-        title="Coach a Coach 2026 operations console"
+        src="/review/index.html"
+        title="Coach a Coach 2026 matching review"
       />
     </main>
   );

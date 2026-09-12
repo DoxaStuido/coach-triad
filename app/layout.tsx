@@ -1,16 +1,12 @@
 import type { Metadata } from "next";
-import { headers } from "next/headers";
 import "./globals.css";
 
-const title = "Coach a Coach 2026 · Review Mockup";
+const title = "Coach a Coach 2026 · Matching Review";
 const description =
-  "Review the proposed APAC triad matching, exception handling, and progress tracking experience.";
+  "Review APAC coaching triads, shared availability, data corrections and manual exceptions. Roster files stay in your browser.";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const requestHeaders = await headers();
-  const host = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host") ?? "localhost";
-  const protocol = requestHeaders.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
-  const origin = `${protocol}://${host}`;
+  const origin = "https://coach-a-coach-2026-review.howie-45.chatgpt.site";
 
   return {
     metadataBase: new URL(origin),
