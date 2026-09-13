@@ -1,8 +1,9 @@
 # Coach a Coach matching foundation
 
-The confirmed-roster draft workflow now has a [v2 implementation contract](matching-review-v2.md).
-This document describes the earlier operational workbook adapter. In v2, >3-hour
-timezone candidates are allowed only in a separate, pending manual-exception pass.
+The current confirmed-roster workflow is documented in the
+[v6 matching rules and review contract](matching-review-v2.md).
+This document describes the earlier operational workbook adapter, not a completed
+live deployment or the current standalone review workflow.
 
 This document is the implementation contract for the Google Sheet and its bound
 Apps Script project. The workbook schema is machine-readable in
@@ -48,6 +49,9 @@ Every proposed triad must satisfy all of the following:
 5. At least one 60-minute recurring UTC slot remains common across all six
    programme months.
 6. A participant belongs to no more than one active proposal or triad.
+7. Credential composition also follows the shared core's current hard policy:
+   no all-MCC or all-learning triad; MCC members may only share a triad with
+   MCC/PCC. PCC may match with ACC and/or learners.
 
 Language remains a hard constraint when it conflicts with Chapter diversity.
 The proposal receives `LANGUAGE_OVERRIDES_CHAPTER` for human review.

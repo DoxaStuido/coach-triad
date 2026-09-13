@@ -1,42 +1,195 @@
-# Matching review v2 — 12 September 2026
+# 配對規則與審核操作
 
-## Current runnable path
+目前規則版本：`2026-09-13.v6`。結果交換格式仍是 `cac-review-v2`，兩者不是同一種版本。
 
-`scripts/read-roster.py` reads the confirmed `Participants` worksheet without modifying it. It validates the 20 source headers, preserves Excel row numbers (including blank timestamps), uses preferred email for stable hashed participant IDs, and fails on duplicate identities. Membership numbers and development narratives are not exported to the review package.
+本文說明目前可執行的 **Excel → Node 配對 → 瀏覽器複查** 流程。Google Sheets 的早期 adapter 尚未完成本流程的實機整合；不能將本機測試通過視為已完成 Sheets 部署。安裝與啟動方式見 [README](../README.md)。
 
-`scripts/run-matching.mjs` loads `MatchingCore.gs`, `NormalizationCore.gs`, and `ReviewMatching.gs` in a local Node context. The same sources are bundled by `scripts/sync-review-engine.mjs` for the browser worker. No external API or language model processes the roster.
+## 1. 輸入與資料邊界
 
-```sh
-CAC_PYTHON=/path/to/bundled/python3 node scripts/run-matching.mjs /private/path/roster.xlsx outputs/private-review
-node scripts/verify-matching-result.mjs outputs/private-review/matching-review.json /private/path/roster.xlsx
+- 原始名冊為 Excel 的 `Participants` 工作表。讀取器按順序檢查 20 欄標頭前綴，不是任意 Excel 欄位對應工具。
+- 保留原始列號，依 preferred email（空白時採表單 email）產生穩定雜湊 ID。重複身份必須先整理，讀取器不會擅自合併。
+- 原始 Excel 不會被修改。瀏覽器修正另存於 `overrides`，並保留修正歷史。
+- 會員號碼、會員到期日與個人成長敘述等不必要欄位不會輸出到複查包。結果仍含姓名、聯絡方式與原始排程備註，必須私下保管。
+- 原始名冊與多工作表營運模板不是可互換的輸入。營運模板的 `Form Responses 1`／`02_Participants` 不等於此讀取器要求的 `Participants`。
+
+## 2. 五種互斥狀態
+
+| 狀態 | 意義 |
+| --- | --- |
+| 配對草案 | 已放入自動或手動三人組；不代表已核准或發布。 |
+| 資料待確認 | 尚未分組，且有資格、承諾、語言、時差等資料問題。 |
+| 尚未配對 | 目前可供配對，但搜尋沒有產生合適三人組；不是不符合參加資格。 |
+| 無法配對 | 本人明確自述常住地／工作基地在本計畫亞太範圍以外。 |
+| 已排除 | 協調人明確記錄了人工排除決定。 |
+
+人工排除優先於區域判定，區域判定優先於資料待確認，不重複計數：
+
+```text
+total = assigned + unmatched + held + unmatchable + excluded
+matchingPool = assigned + unmatched
 ```
 
-The result and self-contained `review.html` contain private participant information. They stay under ignored `outputs/`, outside both Git and website deployment assets. The public review page is an empty viewer with a fictional demo. Importing a result reads the file into browser memory, not a server. Export saves the current review and its history locally; there is no multi-user synchronization or Google Sheet write-back.
+手動草案可以包含仍有待確認事項的人。此人會計入 `assigned`，不再重複計入未分組的 `held`；原本的 `blockingIssues` 仍保留於組員資料，不能視為資料已確認。
 
-## Policy and provisional interpretation
+## 3. 自動配對的必要條件
 
-- The source membership checkbox is the Chapter coordinator's confirmation. A separate participation `No`, ambiguous credential, unresolved local language, ambiguous timezone, or changing-location note creates a data hold, not an ineligibility judgment.
-- Australasia and GMT offsets above +9 need a confirmed city timezone. A fixed GMT response alone does not establish Australian state or New Zealand DST rules. Overrides record coordinator, timestamp and evidence. Temporary relocation requires dated timezone support and remains held in this version; a single-city override cannot clear it.
-- For unambiguous fixed-offset inputs, use the submitted offset as source evidence, not an inferred city. For confirmed IANA cities, compute offsets for every programme day. Candidate windows are actual UTC dates from 1 October 2026 through 31 March 2027, with a continuous 60-minute duration checked at 30-minute starting intervals. Every month must have a shared candidate. Special free-text restrictions still require human checking; displayed times are candidates, not bookings.
-- Generic `Chinese` is not automatically Mandarin or Cantonese. English is accepted only when the source explicitly accepts English; local-only participants cannot be matched through English.
-- Country/region currently uses Chapter geography as a clearly labelled proxy, because the confirmed export has no residence-country column. It is not verified residence or nationality. Indian Chapters share `IN`. A confirmed Australasia city distinguishes Australia and New Zealand. All proxy use is flagged for review.
-- Standard pass: timezone spread <=180 minutes, credential gap <=1 and coaching-hour band gap <=1. Both experience limits are conservative preferences implemented as a first-pass filter, not eligibility rules.
-- Only the remaining unmatched pool enters later passes: peer-gap exceptions within 180 minutes, then timezone exceptions, then combined exceptions. Common language, consent-to-participate and 60-minute availability are never relaxed. Exception candidates are not approved automatically. No board backups were supplied, inferred, or invented.
-- Scores are for comparison, not A/B/C approval thresholds. V2 weights: country/region 20, Chapter 10, credential 25, hours 20, additional availability 15, language preference 5, timezone proximity 5. Country diversity is preferred in candidate selection. Practice areas are displayed for human review, not used to sacrifice experience compatibility. Prior-pairing history is unavailable in the confirmed export.
-- The heuristic is deterministic for identical input and seed but not an exhaustive optimum. A result reflects the currently usable pool; clearing held participants may improve the complete cohort's groupings.
+自動配對前，每位參與者必須：
 
-## Review workflow
+- 會員資格已確認，且有明確參與承諾。
+- 沒有人工排除或亞太區外常住地判定。
+- Chapter、教練資格、時數級距、可接受語言與時區資料可辨識。
+- 具有可計算的可用時段。
 
-1. Import the private JSON, or open the private self-contained HTML.
-2. Review triads, source rows, original notes, common language, timezone spread and monthly time candidates.
-3. Confirm data holds using the correction form where supported. Corrections remain separate from original answers. Re-run explicitly to apply them.
-4. Record acceptance or rejection with reviewer, note and acknowledgement. Acceptance means **review accepted, not published**. Rejected exact triplets are excluded on subsequent browser re-runs.
-5. Export before closing. The export dialog starts a JSON download and provides a copyable JSON fallback for browsers that block downloads. The unsaved-change warning is cleared only after the reviewer explicitly confirms saving or copying. Nothing saves automatically; no email is sent. Re-running moves previous decisions to history and clears approval for new proposals. There are no published/active assignments in this standalone draft workflow; the legacy rematching contract must still protect active triads when live integration is added.
+每個自動草案必須：
 
-## Google Sheets boundary
+- 恰好三位不同參與者；每人最多出現在一組。
+- 三人有共同可接受的語言，並滿足每人的本地語言限定。
+- 在計畫六個月中，每個月都至少有一個共同、連續 60 分鐘的候選時段。
+- 遵守下列資格組合硬限制；後續例外階段也不能放寬。
 
-The `.gs` core is shared, but the existing 13-sheet operational adapter/menu is still the earlier foundation and has not been connected to this confirmed roster or deployed/tested on a live Apps Script project. Use the v2 Node/browser path for these results. Do not represent legacy `runDraftMatching()` or a local green test as a live Sheet integration. The legacy configuration weights and operational workbook schema have not been migrated automatically.
+已拒絕的完整三人組合會在後續自動重算中排除；這不是禁止其中任意兩人再次同組。
 
-## Verification
+## 4. MCC、PCC、ACC、In learning
 
-Run `node --test apps-script/test/*.test.mjs`. Tests cover timezone exceptions, credential exceptions, common-language intersection, a 30-minute-overlap rejection, actual-date DST, source holds, deterministic proposals, role rotation and rejected-triplet exclusion. The independent result checker verifies source fingerprint, participant accounting and displayed UTC candidates against each person's submitted fixed-offset local windows; it deliberately fails instead of claiming independent IANA validation for later corrected-city datasets. Public assets are scanned for real email addresses. Browser tests use fictional data for approval actions, then inspect the real result without approving it.
+內部比較等級為 `LEARNING=0`、`ACC=1`、`PCC=2`、`MCC=3`。這只是配對用的排序，不是能力認證。
+
+### 不可放寬的組合限制
+
+1. 不允許三位 MCC 同組。
+2. 不允許三位 In learning 同組。
+3. 只要組內有 MCC，其他成員只能是 MCC 或 PCC。
+4. PCC 可以與 ACC 及／或 In learning 同組。
+5. 全 PCC、全 ACC，以及 ACC／In learning 的混合組合仍允許。
+
+| 組合例子 | 資格組合是否允許 |
+| --- | --- |
+| MCC + MCC + PCC | 允許 |
+| MCC + PCC + PCC | 允許 |
+| MCC + MCC + MCC | 禁止 |
+| MCC + PCC + ACC | 禁止；PCC 不會成為跨級橋樑。 |
+| MCC + PCC + In learning | 禁止 |
+| PCC + ACC + In learning | 允許 |
+| PCC + In learning + In learning | 允許 |
+| ACC + In learning + In learning | 允許 |
+| In learning + In learning + In learning | 禁止 |
+
+「允許」仍須符合其他自動配對條件。舊版「資格最多差一級」已不再是一般配對的過濾條件；資格相近仍影響評分。
+
+若答案同時包含多種資格，例如 `PCC, In learning process`，列為 `CREDENTIAL_UNRESOLVED`，必須確認後才能加入自動或手動組。
+
+## 5. 教練時數與例外階段
+
+時數級距為 `1–99`、`100–499`、`500–999`、`1,000+`，對應等級 0–3。
+
+一般階段要求最高與最低時數級距最多差一級，最大時差不超過 180 分鐘。只將尚未配對的人送到下一階段：
+
+| 階段 | 時數級距差 | 時差上限 |
+| --- | --- | --- |
+| `STANDARD` | 最多一級 | 180 分鐘 |
+| `PEER_EXCEPTION` | 放寬 | 180 分鐘 |
+| `TIMEZONE_EXCEPTION` | 最多一級 | 1,440 分鐘 |
+| `COMBINED_EXCEPTION` | 放寬 | 1,440 分鐘 |
+
+`PEER_EXCEPTION` 目前指教練時數差距，不會放寬 MCC 資格限制。自動配對的共同語言、參與承諾與共同 60 分鐘時段也不會被例外階段略過。例外仍是待人工核對的草案，不會自動核准。
+
+## 6. GMT、時段與旅行
+
+### 時區計算
+
+- 單一有效的 GMT／UTC 固定時差直接採用，包括 Australasia 的 `GMT+8`、`GMT+10`、`GMT+12`。
+- 不再因 Chapter 或超過 `+9` 而要求城市確認；不自行把固定時差轉成城市或套用夏令時間。
+- 既有協調人確認的 IANA 時區修正仍優先使用，依計畫期間的實際日期計算偏移。
+- 格式無效或同時填多個時差，例如 `GMT+6, GMT+7`，仍需確認。
+- 備註提到不同 GMT 時差時加上 `TIMEZONE_NOTE_REVIEW`，不自動取代或阻擋原本有效的提交時差。
+
+計畫時間範圍固定為 **2026-10-01 至 2027-03-31**。引擎以每 30 分鐘為候選起點，檢查連續 60 分鐘與逐月交集。顯示的是候選時間，不是已約定的會議。
+
+### 旅行與短期缺席
+
+旅行、短期海外停留、某段期間無法出席改標為 `TRAVEL_RISK`：
+
+- 不因此擋住配對。
+- 不依這段自由文字扣除日期或修改提交的週期時段。
+- 在個人與組別顯示潛在配對失敗風險，由三人確認安排。
+
+一般客戶預約、會員續約日期或夏令時間說明，不應僅因出現月份就被當作旅行。
+
+**其他工作時間等自由文字限制尚未完整轉成時段規則。** `SCHEDULING_REVIEW` 代表備註待判讀，不是已確認有衝突；引擎不能保證已滿足全部自由文字需求。
+
+## 7. 亞太資格、Chapter 與印度群組
+
+本計畫沿用包含澳洲、紐西蘭的亞太範圍。
+
+- 本人明確自述常住地／基地在亞太區外時，列為 `OUTSIDE_APAC_RESIDENCE`，在「無法配對」區顯示原始 `residenceEvidence`。
+- 不從 GMT、Chapter、國籍或客戶所在地推定常住地。
+- 永久基地在美國、短期造訪亞洲，仍屬區域外；短期造訪歐洲後返回澳洲，則僅標旅行風險。
+- 辨識採保守的自述語句與地名規則，不是完整自然語言理解。否定、過去居住或單純旅行不當作永久基地證據；無法辨識或有歧義的文字保留給人工核對。
+
+Chapter 的地理分類只用於分組多樣性。印度的 Bengaluru、Chennai、Delhi NCR、Hyderabad、Kolkata、Mumbai（以及字典中的 Pune）都歸為 `IN`。
+
+跨國家／地區與跨 Chapter 是**優先偏好，不是絕對禁配**。不足時仍可能出現同群組，需查看多樣性警示；不會為了跨區而略過共同語言、時段或資格硬限制。
+
+## 8. 語言、評分與搜尋
+
+- 語言以表單明確回答為準，不自行替未同意者加入英語。
+- 單寫 `Chinese` 不自動認定為國語或粵語；若另有明確英語同意，仍可使用英語。
+- 本地語言限定必須由三人共同滿足，不能只找到其中一位會該語言。
+
+| 評分項目 | 權重 |
+| --- | ---: |
+| 資格相近 | 25 |
+| 教練時數相近 | 20 |
+| 國家／地區多樣性 | 20 |
+| 額外共同時段 | 15 |
+| Chapter 多樣性 | 10 |
+| 語言偏好 | 5 |
+| 時區接近 | 5 |
+
+資格／時數級距差 0、1、2、3 對應相近程度分數 100、70、30、0。分數不是核准門檻。
+
+候選挑選另外優先考慮跨國家／地區；完整方案先比較配到的人數，再考慮備援使用、Chapter 例外與總分。使用固定 seed 的有限候選、多次貪婪搜尋及局部交換，結果可重現但不保證全域最佳。
+
+本名冊沒有提供過去配對歷史或 board backup 名單，因此不憑空補入。專業領域供人工查看，不是目前犧牲其他條件的配對權重。
+
+六個月的角色輪替讓每人各擔任 coach、coachee、observer 兩次，手動組也使用同一輪替表。MCC 不會固定擔任 coach，In learning 也不會固定擔任 coachee；這是同儕交換，不是固定師徒組合。
+
+## 9. 人工排除與恢復
+
+- 可從個人資料或組員卡片按「排除此人」，填寫審核人與原因。
+- 決定另存 `overrides[id].exclusion = {excluded,reviewer,reason,at}`，原始資料不刪除；修正歷史保留前後值。
+- 排除立即從畫面有效草案移除該人；受影響的其他成員等待重算。統計標記為待重新計算，核准停用。
+- 恢復參與不會自動解除資料問題或區域判定。符合區域外條件者回到「無法配對」。
+- 已加入手動組的人必須先解除該手動組，不能透過排除偷偷拆散保留的組別。
+
+## 10. 手動配對
+
+從「資料待確認」或「尚未配對」中選恰好三人，填寫審核人、原因並確認這是規劃草案。
+
+- 不挪用已配對、已排除或無法配對的人。
+- 資格未明者須先確認，MCC 等資格硬限制不能繞過。
+- 其他待確認事項可暫時保留在手動草案，但手動配對不代表本人同意或資料已確認。
+- 建立或解除只改該手動組，保留其他草案與審核紀錄。
+- 手動組使用 `M-001` 等 ID，解除後不重用。`manualMatches` 保存有效決定，`manualMatchHistory` 保存建立與解除事件。
+- 自動重算前先保留手動組成員；JSON 匯出／匯入後仍保留同一手動 ID 與成員。
+- 手動組沒有計算品質分數。共同語言、時差及時段只顯示有依據的值；未知時使用 `null`／「未驗證」，不填假時段。
+- 組員仍有資料問題，或有 `MANUAL_*_UNVERIFIED` 時不能核准。可從組員卡片補正，重算刷新證據，不必先解除手動組。
+- 管理與解除入口在待重算或記錄衝突時仍可使用；解除需要審核人與原因，成員依其狀態回到待確認或未配對。
+
+`summary.manualTriads` 與自動例外組數分開。從 Excel 重新開始是全新執行；要保留手動決定，必須用匯出的 JSON 續作。
+
+## 11. 審核、保存與目前限制
+
+- 核准需要審核人、備註與核對勾選；核准仍不是發布或寄信。
+- 修改資料後要明確重算，不能把舊審核直接套用新結果。歷史仍保留。
+- 只有瀏覽器記憶體保存目前操作。關閉前必須匯出 JSON，並確認已下載或複製。
+- HTML 不會自動被改寫；重新開啟同一 HTML 載入的是原本嵌入的快照。續作需匯入最新 JSON。
+- 獨立 HTML 內含當時的引擎。規則更新後須使用新版頁面並明確重算，不是重新整理舊 HTML 就會升級。
+- 沒有多人同步、自動保存、正式發布、通知寄送或目前名冊的 Google Sheets 回寫。
+
+## 12. 驗證
+
+`npm test` 執行 build 與配對測試；`npm run lint` 執行 ESLint。測試應保護資格組合、時區／旅行／區域分類、手動排除、手動組隊與解除、重算保留、未知證據和互斥計數。
+
+`node scripts/verify-matching-result.mjs <result.json> <original.xlsx>` 獨立檢查來源指紋、計數、身份不重複、資格硬限制、排除／區域限制，以及已顯示的共同語言與 60 分鐘時段。手動草案的未確認事項不能被當作自動資格通過；有未確認證據的組別不能核准。檢查器亦掃描 public assets 是否意外包含來源名單 email。
+
+測試與驗證成功不代表自由文字需求全部成立，也不代表已部署或完成真人同意。
