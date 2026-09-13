@@ -502,7 +502,7 @@ var CacNormalizationCore = (function () {
 
   var LANGUAGE_PATTERNS = [
     { code: "id", pattern: /bahasa indonesia|indonesian/i },
-    { code: "ms", pattern: /bahasa (malaysia|melayu)|malay/i },
+    { code: "ms", pattern: /bahasa (malaysia|melayu)|\bmalay\b/i },
     { code: "yue", pattern: /cantonese/i },
     { code: "zh", pattern: /mandarin|putonghua|chinese|中文/i },
     { code: "vi", pattern: /vietnamese/i },
