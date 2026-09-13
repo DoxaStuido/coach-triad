@@ -1,5 +1,7 @@
 # Coach a Coach matching foundation
 
+[English](google-sheet-and-matching-spec.md) | [繁體中文](google-sheet-and-matching-spec.zh-TW.md)
+
 The current confirmed-roster workflow is documented in the
 [v6 matching rules and review contract](matching-review-v2.md).
 This document describes the earlier operational workbook adapter, not a completed

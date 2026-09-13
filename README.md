@@ -1,16 +1,29 @@
 # Coach a Coach
 
-三人同儕教練配對與中英雙語複查工作台。主要流程是：
+[English](README.md) | [繁體中文](README.zh-TW.md)
 
-**原始 Excel → 本機 CLI 配對 → 自帶資料與引擎的私人 HTML → 人工複查 → 匯出 JSON 留存／接續工作。**
+A peer-coaching triad matching tool and bilingual English / Traditional Chinese review workbench. The main workflow is:
 
-這是可在本機執行的配對與複查工具，不只是畫面 mockup；但它也不是已上線的 Google Sheets 營運系統。網頁目前**不能直接上傳 Excel**，只能匯入 `cac-review-v2` JSON。JSON 是 CLI 的產出與後續交接格式，不必先自行整理一份 JSON 名單。
+**Original Excel → local CLI matching → private HTML with embedded data and engine → human review → JSON export for recordkeeping / resuming work.**
 
-目前規則版本為 `2026-09-13.v6`。完整且權威的配對規則、計分、例外與資料邊界請見 [目前配對與複查規則](docs/matching-review-v2.md)。
+This is a locally runnable matching and review tool, not just a UI mockup; it is also not a live Google Sheets operations system. The web page currently **cannot upload Excel directly**: it only imports `cac-review-v2` JSON. JSON is the CLI output and subsequent handover format; you do not need to prepare a JSON roster yourself first.
 
-## 1. 安裝
+The current rules version is `2026-09-13.v6`. See [Current matching and review rules](docs/matching-review-v2.md) for the complete, authoritative matching rules, scoring, exceptions, and data boundaries.
 
-需要 Node.js **>=22.13.0**、npm，以及可建立虛擬環境的 Python 3。在專案根目錄執行：
+## Bilingual documentation index
+
+| 文件 / Document | English | 繁體中文 |
+| --- | --- | --- |
+| 專案入門與交接 / Project setup and handover | [English](README.md) | [繁體中文](README.zh-TW.md) |
+| 目前配對與複查規則（v6） / Current matching and review rules (v6) | [English](docs/matching-review-v2.md) | [繁體中文](docs/matching-review-v2.zh-TW.md) |
+| 舊版 Google Sheets 與配對設計 / Legacy Google Sheets and matching design | [English](docs/google-sheet-and-matching-spec.md) | [繁體中文](docs/google-sheet-and-matching-spec.zh-TW.md) |
+| 舊版 Apps Script 基礎架構 / Legacy Apps Script foundation | [English](apps-script/README.md) | [繁體中文](apps-script/README.zh-TW.md) |
+
+**Documentation maintenance rule:** Future handover documents must have both English and Traditional Chinese versions, updated together. Use the canonical `.md` filename for English and insert `.zh-TW` before `.md` for Traditional Chinese. Preserve executable code, commands, identifiers, and runtime/data paths when translating; documentation links should point to the corresponding language, except in language navigation and bilingual indexes.
+
+## 1. Setup
+
+You need Node.js **>=22.13.0**, npm, and Python 3 with virtual-environment support. Run these commands from the project root:
 
 ```bash
 npm ci
@@ -18,103 +31,103 @@ python3 -m venv .venv
 .venv/bin/python -m pip install openpyxl
 ```
 
-`openpyxl` 只用於本機唯讀解析 Excel；`CAC_PYTHON` 必須指向已安裝它的 Python。下列命令以 macOS／Linux 為例，不需要先啟用虛擬環境。
+`openpyxl` is used only for local, read-only Excel parsing; `CAC_PYTHON` must point to a Python installation that has it installed. The commands below are for macOS / Linux and do not require activating the virtual environment first.
 
-## 2. 從原始 Excel 產生私人複查包
+## 2. Generate a private review package from the original Excel
 
-將原始 `.xlsx` 放在不會提交的私人位置；以下用已忽略的 `work/roster.xlsx` 作為示意路徑。來源必須有 `Participants` 工作表，前 20 欄符合 `scripts/read-roster.py` 所檢查的表單欄位與順序；這不是任意 Excel 的通用匯入器。
+Keep the original `.xlsx` in a private location that will not be committed; the examples below use the ignored path `work/roster.xlsx`. The source must contain a `Participants` worksheet whose first 20 columns match the form fields and order checked by `scripts/read-roster.py`; this is not a general-purpose importer for arbitrary Excel files.
 
 ```bash
 node scripts/sync-review-engine.mjs
 CAC_PYTHON=.venv/bin/python npm run match:roster -- work/roster.xlsx outputs/private-review
 ```
 
-先同步引擎，才能讓產出的 HTML 與 CLI 使用同一份核心。CLI 只讀取 Excel，不修改來源；保留來源列號與檔案指紋，使用雜湊 ID，遇到重複身分會停止。雜湊 ID **不代表匿名化**，複查包仍含姓名、聯絡資訊與必要原始回答。
+Synchronize the engine first so that the generated HTML and CLI use the same core. The CLI reads Excel without changing the source; it preserves source row numbers and the file fingerprint, uses hashed IDs, and stops on duplicate identities. Hashed IDs **do not mean anonymization**: the review package still contains names, contact information, and necessary original answers.
 
-輸出目錄必須是已被 Git 忽略的 `outputs/` **子目錄**，不可直接指定 `outputs/` 或其他位置：
+The output directory must be a **subdirectory** of the Git-ignored `outputs/`; do not specify `outputs/` itself or any other location:
 
-| 檔案 | 用途 |
+| File | Purpose |
 | --- | --- |
-| `outputs/private-review/review.html` | 自帶資料、樣式與配對引擎；直接用瀏覽器開啟即可私人複查，不需啟動伺服器。 |
-| `outputs/private-review/matching-review.json` | 初始配對結果；可匯入複查頁，但不會隨瀏覽器操作自動更新。 |
+| `outputs/private-review/review.html` | Embeds data, styles, and the matching engine; open it directly in a browser for private review, with no server required. |
+| `outputs/private-review/matching-review.json` | Initial matching results; can be imported into the review page, but are not automatically updated by browser actions. |
 
-CLI 另接受第三個位置參數 `[overrides.json]` 作為修正資料；它不是完整審核匯出檔，也不是接續既有手動組別與審核歷史的入口。接續工作請在網頁匯入最後一次匯出的 JSON。
+The CLI also accepts a third positional argument, `[overrides.json]`, for corrections. This is neither a complete review export nor an entry point for resuming existing manual groups and review history. To resume work, import the most recent exported JSON into the web page.
 
-### 獨立結果檢查器
+### Independent result verifier
 
-可對 CLI 初始結果，或已套用修正並匯出的 v6 複查結果執行：
+Run this on initial CLI results or on exported v6 review results after corrections have been applied:
 
 ```bash
 node scripts/verify-matching-result.mjs outputs/private-review/matching-review.json work/roster.xlsx
 ```
 
-檢查器不呼叫配對核心，另行檢查來源指紋、五種狀態計數、重複分組、資格硬限制、人工排除、手動決定與已顯示的共同語言／60 分鐘時段，也掃描公開資產是否包含來源 email。手動草案可保留明確標示的未確認事項，但不能把未知資料當作已驗證，或核准仍有資料問題的組別。先完成必要重算再檢查；失敗不可略過當作通過，通過也不代表已完成人工複查。
+The verifier does not call the matching core. It independently checks the source fingerprint, counts for all five statuses, duplicate group assignments, hard credential constraints, manual exclusions, manual decisions, and displayed common languages / 60-minute slots. It also scans public assets for email addresses from the source. Manual drafts may retain explicitly marked unresolved items, but must not treat unknown data as verified or approve groups with unresolved data issues. Complete any required recalculation before checking. A failure must not be skipped or treated as a pass, and a pass does not mean human review is complete.
 
-## 3. 複查與修正
+## 3. Review and corrections
 
-工作台有五個檢視：
+The workbench has five views:
 
-| 檢視 | 應如何處理 |
+| View | What to do |
 | --- | --- |
-| 配對草案 | 檢查自動／例外／手動組別、原始回答、共同語言、時差與每月候選時段，記錄複查決定。 |
-| 資料待確認 | 有會員、承諾、程度、語言、時區或時段等未釐清項目，不進自動配對。 |
-| 尚未配對 | 資料可用但尚未找到組別；可進一步人工評估。 |
-| 無法配對 | 本人明確陳述常住地／工作基地在亞太區外；不是依 GMT 或 Chapter 推測。 |
-| 已排除 | 協調人明確排除的成員；保留原始資料、原因與審核軌跡。 |
+| Draft triads | Check automatic / exception / manual groups, original answers, common languages, time-zone offset spreads, and monthly candidate slots; record review decisions. |
+| Data holds | Unresolved membership, commitment, credential, language, time-zone, availability, or other inputs; these participants are not included in automatic matching. |
+| Unmatched | Data is usable, but no group has been found yet; further human assessment is possible. |
+| Unmatchable | The participant explicitly states that their permanent residence / work base is outside Asia-Pacific; this is not inferred from GMT or chapter. |
+| Excluded | Members explicitly excluded by a coordinator; original data, reasons, and the audit trail are retained. |
 
-已加入手動草案的待確認成員會顯示於草案內，不再重複計入「資料待確認」；但未解決項目仍保留。
+Participants with data holds who have been added to manual drafts appear in those drafts and are no longer counted again under “Data holds”; their unresolved items are still retained.
 
-- **確認／修正資料**：表單支援城市時區、教練程度、語言與參與承諾，須填確認人及依據。修正與原始回答分開保存，不回寫 Excel；不是所有欄位都能在此編輯。
-- **明確重新配對**：儲存修正後，按「依修正資料重新配對」才會更新資格、時段、分數與草案。待重算期間不能核准，也不能建立新手動組別。
-- **排除／恢復**：須填審核人與原因，系統記錄時間。排除不刪資料；恢復不會清除原有待確認或亞太區外常住地判定，仍須重新配對。若成員已在手動組別，先解除該組才能排除。
-- **複查決定**：通過、退回或重設須有審核人及說明；通過另需確認聲明。通過只代表複查接受，**不是發布、本人同意或已約定會議**。
+- **Confirm / correct data**: The form supports city time zones, credentials, languages, and participation commitment, and requires the confirming person's name and supporting evidence. Corrections are stored separately from original answers and are not written back to Excel; not every field is editable here.
+- **Explicitly re-run matching**: After saving corrections, click “Re-run with corrections” to update eligibility, slots, scores, and drafts. While recalculation is pending, reviews cannot be accepted and new manual groups cannot be created.
+- **Exclude / restore**: A reviewer and reason are required, and the system records the time. Exclusion does not delete data; restoration does not clear existing data holds or an outside-Asia-Pacific residence determination, and matching must still be re-run. If a member belongs to a manual group, release that group before excluding them.
+- **Review decisions**: Accepting, returning for rematch, or resetting a review requires a reviewer and explanation; acceptance additionally requires an acknowledgment. Acceptance means only that the review was accepted—**not publication, participant consent, or a booked session**.
 
-自動配對先找時差不超過 3 小時的標準組，再從剩餘名單找時數與時差例外；資格硬限制不放寬。共同語言及六個月每月都有連續 60 分鐘候選時段仍是自動配對要求。畫面上的時段是候選，不是預約。單一有效 GMT／UTC 固定時差直接採用；不因大於 +9 或 Chapter 而暫停。亞太區包含澳洲與紐西蘭，暫時旅行／缺席僅標示風險，不等同常住亞太區外。
+Automatic matching first looks for standard groups with a maximum time-zone offset spread of 3 hours, then looks for coaching-hours and time-zone exceptions among the remaining participants; hard credential constraints are not relaxed. A common language and a continuous 60-minute candidate slot in every month of the six-month period remain mandatory for automatic matching. Displayed slots are candidates, not bookings. A single valid GMT / UTC fixed offset is used directly; an offset above +9 or a participant's chapter does not trigger a hold. Asia-Pacific includes Australia and New Zealand. Temporary travel / absence is flagged only as a risk and is not equivalent to permanent residence outside Asia-Pacific.
 
-### 手動三人草案
+### Manual triad drafts
 
-在「手動配對」從「資料待確認／尚未配對」選擇 **3 位不同成員**，填審核人、原因並確認這只是未驗證規劃草案。系統建立 `M-001` 起的組別，保存建立時間與確認聲明。
+In “Manual matching,” select **3 distinct members** from “Data holds / Unmatched,” enter a reviewer and reason, and acknowledge that this is only an unverified planning draft. The system creates groups starting at `M-001` and stores the creation time and acknowledgment.
 
-手動配對不代表可跳過所有限制：
+Manual matching does not allow every constraint to be bypassed:
 
-- 已分組、已排除或常住亞太區外者不可選；教練程度不明者須先修正並重新配對。
-- 自動與手動都禁止全 MCC、全 `LEARNING`（學習中），也禁止 MCC 與 ACC／`LEARNING` 同組。MCC 只能與 PCC／MCC 搭配，且仍不可全 MCC；PCC 可以與 ACC／`LEARNING` 搭配。
-- 其他待確認項目可以保留在規劃草案中，但系統不會替未知資料補上語言、時區或時段。手動草案的 `score`／`subscores` 為 `null`；沒有證據不是零分或已驗證。
-- 成員仍有待確認項目，或草案有 `MANUAL_*_UNVERIFIED` 標記時，不能核准。先取得依據、修正並重新配對；若修正造成教練程度衝突，先解除手動組別。
+- Already assigned, excluded, or permanently outside-Asia-Pacific participants cannot be selected; unresolved credentials must be corrected and matching re-run first.
+- Both automatic and manual matching prohibit all-MCC and all-`LEARNING` (learning) groups, as well as MCC with ACC / `LEARNING` in the same group. MCC may only be grouped with PCC / MCC, and the group still cannot be all MCC; PCC may be grouped with ACC / `LEARNING`.
+- Other unresolved inputs may remain in a planning draft, but the system does not fill in languages, time zones, or availability for unknown data. A manual draft's `score` / `subscores` are `null`; missing evidence is neither a zero score nor verification.
+- A group cannot be approved while members have unresolved data holds or the draft has `MANUAL_*_UNVERIFIED` flags. Obtain evidence, correct the data, and re-run matching first; if corrections cause a credential conflict, release the manual group first.
 
-「手動配對 → 管理既有手動組別」可解除組別，須填審核人及解除原因。解除後成員依原有狀態回到待確認或尚未配對，不會自動改配；建立與解除都保留歷史，且不改動其他既有草案及其審核。
+Use “Manual matching → Manage active manual groups” to release a group; a reviewer and release reason are required. Released members return to Data holds or Unmatched according to their existing status and are not automatically rematched. Both creation and release remain in history, without changing other existing drafts or their reviews.
 
-瀏覽器重新配對會保留有效手動組別與建立／解除歷史，但可能重排其他草案；舊審核移入歷史，不沿用為新結果的核准。已退回的確切三人組合會排除於後續瀏覽器重跑。
+Re-running matching in the browser preserves valid manual groups and creation / release history, but may rearrange other drafts. Previous reviews move into history and do not carry over as approvals of the new results. Exact three-person combinations previously returned for rematch are excluded from subsequent browser re-runs.
 
-## 4. 儲存、交接與升級
+## 4. Saving, handover, and upgrades
 
-所有網頁操作只在瀏覽器記憶體中，**沒有自動儲存**，也不會覆寫原本的 HTML 或 JSON。
+All web actions take place only in browser memory. **There is no automatic saving**, and the original HTML or JSON is not overwritten.
 
-1. 離開或交接前按「匯出審核紀錄」，下載目前完整 JSON。
-2. 確認檔案確實存在；下載被擋時，可複製對話框中的完整內容，另存為 `.json`。
-3. 確認後按「已確認儲存／複製」。這個按鈕是人工確認，不是替你寫檔。
-4. 下次在複查頁按「匯入結果」，選擇最新匯出檔，即可接續修正、手動組別與歷史。交給下一位協調人時也使用這份檔案，而非單純分享網頁連結。
+1. Before leaving or handing over, click “Export review” to download the current complete JSON.
+2. Confirm that the file actually exists. If the download is blocked, copy the complete content from the dialog and save it separately as `.json`.
+3. After checking, click “I confirmed it is saved / copied.” This button records your confirmation; it does not write a file for you.
+4. Next time, click “Import results” on the review page and select the latest export to resume corrections, manual groups, and history. Give this file to the next coordinator as well, rather than merely sharing a web link.
 
-**舊的自含 HTML 內嵌舊引擎，不會隨程式更新。** 升級後要套用新規則，先保存 JSON，再以最新版複查頁匯入，明確重新配對。單純重新打開舊 HTML 或匯入舊 JSON 不會自動遷移／重算；從 Excel 重跑 CLI 則是新的初始報告，不會合併舊審核歷史。
+**An old self-contained HTML file embeds the old engine and does not update when the code changes.** To apply new rules after an upgrade, save the JSON first, import it into the latest review page, and explicitly re-run matching. Simply reopening old HTML or importing old JSON does not automatically migrate / recalculate results. Re-running the CLI from Excel produces a new initial report and does not merge previous review history.
 
-## 開發與不含私密資料的試用
+## Development and trying the tool without private data
 
 ```bash
 npm run dev
 ```
 
-開啟終端機**實際印出的 URL**；不要假設固定是 `localhost:3000`。首頁載入複查工作台，也可開該網址下的 `/review/`。按「用虛構資料試用」不需要真實名單。
+Open the **actual URL printed by the terminal**; do not assume it is always `localhost:3000`. The home page loads the review workbench, which is also available at `/review/` under that URL. Click “Try fictional data” to try it without a real roster.
 
-只需靜態複查頁時，可改用：
+If you only need the static review page, use:
 
 ```bash
 node scripts/sync-review-engine.mjs
 python3 -m http.server 4173 --bind 127.0.0.1 --directory public
 ```
 
-開啟 `http://127.0.0.1:4173/review/`。只提供 `public/`，不要從專案根目錄提供 HTTP 服務，以免暴露私人輸出。
+Open `http://127.0.0.1:4173/review/`. Serve only `public/`; do not serve HTTP from the project root, to avoid exposing private output.
 
-開發命令：
+Development commands:
 
 ```bash
 npm run test:matching
@@ -122,15 +135,15 @@ npm test
 npm run lint
 ```
 
-- `test:matching` 執行 `apps-script/test/*.test.mjs` 的 Node 測試。
-- `npm test` 先執行 `npm run build`，再執行 `test:matching`，不是只有單元測試。
-- `lint` 執行 ESLint；不包含獨立結果檢查器或人工／瀏覽器複查。
-- `dev` 與 `build` 的前置腳本會同步 `public/review/engine.js`。核心來源在 `apps-script/src/MatchingCore.gs`、`NormalizationCore.gs`、`ReviewMatching.gs`；不要直接修改產生的引擎檔。
+- `test:matching` runs the Node tests in `apps-script/test/*.test.mjs`.
+- `npm test` runs `npm run build` first, then `test:matching`; it is not just unit tests.
+- `lint` runs ESLint; it does not include the independent result verifier or human / browser review.
+- The pre-scripts for `dev` and `build` synchronize `public/review/engine.js`. The core sources are `apps-script/src/MatchingCore.gs`, `NormalizationCore.gs`, and `ReviewMatching.gs`; do not edit the generated engine file directly.
 
-## 隱私與現階段邊界
+## Privacy and current limitations
 
-- 名單由本機 Python／Node 或瀏覽器處理，不傳給外部 API、語言模型或遠端儲存服務。複查頁禁止網路資料連線；載入網頁資產本身不等於上傳名單。
-- 公開頁面只提供空白檢視器與虛構示範。私人 Excel、HTML、JSON 與匯出紀錄不可放進 `public/`、部署產物、Git、issue 或 PR。下載的 JSON 也要自行妥善保管；`.gitignore` 不是加密或存取控管。
-- 沒有多人同步、Excel／Google Sheets 回寫、自動發布組隊或寄信。配對是確定性的啟發式草案，不保證全域最佳解，也不能替代人工核對自由文字限制與參與意願。
-- [Google Sheets 與配對設計](docs/google-sheet-and-matching-spec.md) 及 [Apps Script foundation](apps-script/README.md) 是較早期的工作簿／整合文件，不是本機 v6 行為的依據，也不表示已完成正式 Google Sheets 部署。
-- 原始畫面保留於 [mockup](public/mockup/index.html)；透過上述靜態伺服器可開 `/mockup/index.html`。它與目前 `/review/` 的可操作複查流程分開。
+- Roster data is processed by local Python / Node or the browser, not sent to external APIs, language models, or remote storage services. The review page blocks network data connections; loading the web assets themselves does not upload the roster.
+- Public pages provide only an empty viewer and fictional demo. Private Excel, HTML, JSON, and exported records must not be placed in `public/`, deployment artifacts, Git, issues, or PRs. You must also keep downloaded JSON secure yourself; `.gitignore` is not encryption or access control.
+- There is no multi-user synchronization, Excel / Google Sheets write-back, automatic group publication, or email sending. Matching produces deterministic heuristic drafts, does not guarantee a global optimum, and cannot replace human checks of free-text constraints and willingness to participate.
+- [Google Sheets and matching design](docs/google-sheet-and-matching-spec.md) and [Apps Script foundation](apps-script/README.md) are earlier workbook / integration documents, not the authority for local v6 behavior or evidence of a completed production Google Sheets deployment.
+- The original screen is preserved in the [mockup](public/mockup/index.html); open `/mockup/index.html` through the static server described above. It is separate from the current interactive review workflow at `/review/`.
