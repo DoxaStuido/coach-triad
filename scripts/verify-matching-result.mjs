@@ -8,10 +8,20 @@ const byId = new Map(r.participants.map(p=>[p.id,p]));
 const assigned = new Set(), held = r.participants.filter(p=>p.blockingIssues.length);
 function localParts(instant, zone) {
   const m=zone.match(/^(GMT|UTC)([+-])(\d{1,2})(?::(\d{2}))?$/);
-  if(!m)throw new Error("Independent fixed-offset verifier needs an IANA adapter for corrected city data");
-  const offset=(m[2]==="-"?-1:1)*(Number(m[3])*60+Number(m[4]||0));
-  const d=new Date(instant+offset*60000);
-  return {day:d.getUTCDay()||7,minute:d.getUTCHours()*60+d.getUTCMinutes(),offset};
+  if(m) {
+    const offset=(m[2]==="-"?-1:1)*(Number(m[3])*60+Number(m[4]||0));
+    const d=new Date(instant+offset*60000);
+    return {day:d.getUTCDay()||7,minute:d.getUTCHours()*60+d.getUTCMinutes(),offset};
+  }
+  const dt=new Intl.DateTimeFormat("en-GB",{timeZone:zone,hour:"2-digit",minute:"2-digit",weekday:"short",hourCycle:"h23"});
+  const parts=Object.fromEntries(dt.formatToParts(new Date(instant)).map(p=>[p.type,p.value]));
+  const dayMap={Mon:1,Tue:2,Wed:3,Thu:4,Fri:5,Sat:6,Sun:7};
+  const utcD=new Date(instant);
+  const localMinute=Number(parts.hour)*60+Number(parts.minute);
+  const utcMinute=utcD.getUTCHours()*60+utcD.getUTCMinutes();
+  let offset=localMinute-utcMinute;
+  if(offset<-720)offset+=1440; if(offset>720)offset-=1440;
+  return {day:dayMap[parts.weekday]||1,minute:localMinute,offset};
 }
 const issues={}, phases={};
 for(const p of held)for(const code of p.blockingIssues)issues[code]=(issues[code]||0)+1;

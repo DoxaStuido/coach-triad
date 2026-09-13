@@ -368,14 +368,18 @@ var CacMatchingCore = (function () {
     var backups = scarcityOrder_(backupParticipants.filter(function (member) { return member.eligible && !member.manualHold; }), compatibilityIndex);
     var triads = solution.triads.slice();
 
+    var stuckIds = {};
     while (unmatched.length && unmatched.length + backups.length >= 3) {
       var anchor = unmatched.shift();
+      if (stuckIds[anchor.id]) { unmatched.push(anchor); break; }
       var pool = unmatched.concat(backups);
       var candidates = candidateTriadsForAnchor_(anchor, pool, config, compatibilityIndex);
       if (!candidates.length) {
+        stuckIds[anchor.id] = true;
         unmatched.push(anchor);
-        break;
+        continue;
       }
+      stuckIds = {};
       var selected = candidates[0];
       triads.push(selected);
       var ids = selected.members.map(function (member) { return member.id; });

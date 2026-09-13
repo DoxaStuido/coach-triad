@@ -369,14 +369,18 @@ var CacMatchingCore = (function () {
     var backups = scarcityOrder_(backupParticipants.filter(function (member) { return member.eligible && !member.manualHold; }), compatibilityIndex);
     var triads = solution.triads.slice();
 
+    var stuckIds = {};
     while (unmatched.length && unmatched.length + backups.length >= 3) {
       var anchor = unmatched.shift();
+      if (stuckIds[anchor.id]) { unmatched.push(anchor); break; }
       var pool = unmatched.concat(backups);
       var candidates = candidateTriadsForAnchor_(anchor, pool, config, compatibilityIndex);
       if (!candidates.length) {
+        stuckIds[anchor.id] = true;
         unmatched.push(anchor);
-        break;
+        continue;
       }
+      stuckIds = {};
       var selected = candidates[0];
       triads.push(selected);
       var ids = selected.members.map(function (member) { return member.id; });
@@ -670,7 +674,7 @@ var CacReviewMatching = (function () {
     var credentialChoices = credentialRaw.toUpperCase().match(/\bACC\b|\bPCC\b|\bMCC\b|LEARNING/g) || [];
     if (unique(credentialChoices).length !== 1) block.push("CREDENTIAL_UNRESOLVED");
     var credential = CacNormalizationCore.normalizeCredential(credentialRaw), hours = CacNormalizationCore.normalizeHours(raw.hoursRaw);
-    if (!/^(1\s*[~–-]\s*99|100\s*[–-]\s*499|500\s*[–-]\s*999|1,?\s*000\s*\+)$/i.test(text(raw.hoursRaw))) block.push("HOURS_UNRESOLVED");
+    if (!/^(1\s*[~–-]\s*99|100\s*[~–-]\s*499|500\s*[~–-]\s*999|1,?\s*000\s*\+)$/i.test(text(raw.hoursRaw))) block.push("HOURS_UNRESOLVED");
     var localOnly = CacNormalizationCore.languageMode(raw.englishAnswer) === "LOCAL_ONLY";
     if (override.languages && (!Array.isArray(override.languages) || override.languages.some(function (code) { return !/^(en|zh|yue|th|vi|id|ms|ja|ko|hi|ta|te|mr|tl|fr)$/.test(code); }))) throw new Error("Invalid confirmed language codes");
     var languages = override.languages || CacNormalizationCore.normalizeLanguages(raw.languageRaw);
@@ -693,7 +697,7 @@ var CacReviewMatching = (function () {
     var slots = [], offsets = [];
     if (!block.some(function (v) { return /TIMEZONE|LOCATION|AVAILABILITY/.test(v); })) {
       try { var schedule = calendar(windows, zone); slots = schedule.slots; offsets = schedule.offsets; }
-      catch { block.push("TIMEZONE_UNRESOLVED"); }
+      catch (e) { if (e instanceof RangeError) block.push("TIMEZONE_UNRESOLVED"); else throw e; }
     }
     var monthCount = unique(slots.map(function (slot) { return slot.split(":")[0]; })).length;
     if (!block.length && monthCount !== 6) block.push("AVAILABILITY_UNRESOLVED");

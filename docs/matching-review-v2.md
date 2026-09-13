@@ -35,7 +35,7 @@ The result and self-contained `review.html` contain private participant informat
 
 ## Google Sheets boundary
 
-The `.gs` core is shared, but the existing 15-sheet operational adapter/menu is still the earlier foundation and has not been connected to this confirmed roster or deployed/tested on a live Apps Script project. Use the v2 Node/browser path for these results. Do not represent legacy `runDraftMatching()` or a local green test as a live Sheet integration. The legacy configuration weights and operational workbook schema have not been migrated automatically.
+The `.gs` core is shared, but the existing 13-sheet operational adapter/menu is still the earlier foundation and has not been connected to this confirmed roster or deployed/tested on a live Apps Script project. Use the v2 Node/browser path for these results. Do not represent legacy `runDraftMatching()` or a local green test as a live Sheet integration. The legacy configuration weights and operational workbook schema have not been migrated automatically.
 
 ## Verification
 

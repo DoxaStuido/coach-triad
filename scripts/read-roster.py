@@ -31,6 +31,7 @@ for source_row, cells in enumerate(sheet.iter_rows(min_row=2), 2):
     identity = str(row["email"] or row["formEmail"] or "").strip().lower()
     row["id"] = "P-" + hashlib.sha256(identity.encode()).hexdigest()[:12]
     row["sourceRow"] = source_row
+    row["membershipConfirmed"] = row.get("membershipConfirmed") in (True, "TRUE", "True", "Yes", "yes", 1)
     # Membership numbers and personal-development narratives are not needed for matching.
     for field in ("membershipNumber", "membershipExpiry", "goals", "developmentGoals", "timestamp", "formEmail"):
         row.pop(field)

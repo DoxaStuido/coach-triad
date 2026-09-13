@@ -8,13 +8,16 @@ const [source, destination, overridesPath] = process.argv.slice(2);
 if (!source || !destination || !process.env.CAC_PYTHON) throw new Error("Usage: CAC_PYTHON=<bundled python> node scripts/run-matching.mjs <source.xlsx> <private output directory> [overrides.json]");
 const out = path.resolve(destination);
 if (!out.startsWith(path.join(root, "outputs") + path.sep)) throw new Error("Private results must stay under ignored outputs/");
+await fs.mkdir(out, { recursive: true });
+const realOut = await fs.realpath(out);
+const realOutputs = await fs.realpath(path.join(root, "outputs"));
+if (!realOut.startsWith(realOutputs + path.sep)) throw new Error("Destination resolves outside outputs/ (symlink detected)");
 const input = JSON.parse(execFileSync(process.env.CAC_PYTHON, [path.join(root, "scripts/read-roster.py"), source], { encoding: "utf8", maxBuffer: 10 * 1024 * 1024 }));
 const context = vm.createContext({ Intl, Date, console });
 for (const file of ["MatchingCore", "NormalizationCore", "ReviewMatching"]) vm.runInContext(await fs.readFile(path.join(root, `apps-script/src/${file}.gs`), "utf8"), context);
 const overrides = overridesPath ? JSON.parse(await fs.readFile(overridesPath, "utf8")) : {};
 const started = Date.now();
 const report = context.CacReviewMatching.run(input, overrides);
-await fs.mkdir(out, { recursive: true });
 await fs.writeFile(path.join(out, "matching-review.json"), JSON.stringify(report, null, 2), { mode: 0o600 });
 // Self-contained private review page, never copied to public/ or deployment output.
 const html = await fs.readFile(path.join(root, "public/review/index.html"), "utf8");
