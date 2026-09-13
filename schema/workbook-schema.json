@@ -1,0 +1,303 @@
+{
+  "workbookVersion": "1.0.0",
+  "capacityRows": 500,
+  "sheets": [
+    {
+      "name": "00_Config",
+      "purpose": "Programme dates, hard constraints, scoring weights, and run controls.",
+      "capacityRows": 50,
+      "fields": [
+        { "name": "key", "type": "TEXT", "required": true, "editable": false, "description": "Stable configuration key." },
+        { "name": "value", "type": "MIXED", "required": true, "editable": true, "description": "Configuration value used by Apps Script." },
+        { "name": "data_type", "type": "ENUM", "required": true, "editable": false, "description": "DATE, NUMBER, BOOLEAN, or TEXT.", "validation": ["DATE", "NUMBER", "BOOLEAN", "TEXT"] },
+        { "name": "description", "type": "TEXT", "required": true, "editable": false, "description": "Human-readable policy description." },
+        { "name": "rules_version", "type": "TEXT", "required": true, "editable": true, "description": "Version attached to each matching run." },
+        { "name": "updated_at", "type": "DATETIME", "required": false, "editable": false, "description": "Last update timestamp." },
+        { "name": "updated_by", "type": "EMAIL", "required": false, "editable": false, "description": "Account that last changed the value." }
+      ],
+      "seedRows": [
+        ["program_start_date", "2026-10-01", "DATE", "Programme start date.", "v1.0", null, null],
+        ["program_end_date", "2027-03-31", "DATE", "Programme end date.", "v1.0", null, null],
+        ["registration_deadline_default", "2026-09-01", "DATE", "Registration deadline for all Chapters except Australasia.", "v1.0", null, null],
+        ["registration_deadline_australasia", "2026-09-08", "DATE", "Registration deadline for the entire Australasia Chapter, including New Zealand.", "v1.0", null, null],
+        ["verification_deadline", "2026-09-12", "DATE", "Chapter membership verification deadline.", "v1.0", null, null],
+        ["max_timezone_spread_minutes", 180, "NUMBER", "Maximum time-zone spread across a triad.", "v1.0", null, null],
+        ["min_shared_slot_minutes", 60, "NUMBER", "Minimum shared recurring meeting window.", "v1.0", null, null],
+        ["minimum_month_coverage", 6, "NUMBER", "Number of programme months that must retain a common slot.", "v1.0", null, null],
+        ["shortlist_size", 24, "NUMBER", "Maximum compatible peers considered per anchor participant.", "v1.0", null, null],
+        ["restart_count", 24, "NUMBER", "Deterministic greedy restarts used by the matching engine.", "v1.0", null, null],
+        ["weight_cross_chapter", 30, "NUMBER", "Soft-score weight for three different Chapters.", "v1.0", null, null],
+        ["weight_credential", 20, "NUMBER", "Soft-score weight for similar credential levels.", "v1.0", null, null],
+        ["weight_coaching_hours", 20, "NUMBER", "Soft-score weight for similar coaching-hour bands.", "v1.0", null, null],
+        ["weight_availability", 15, "NUMBER", "Soft-score weight for additional common time slots.", "v1.0", null, null],
+        ["weight_language_preference", 10, "NUMBER", "Soft-score weight for first-choice language.", "v1.0", null, null],
+        ["weight_avoid_repeat_pairing", 5, "NUMBER", "Soft-score weight for avoiding prior pairings.", "v1.0", null, null],
+        ["match_seed", 20260918, "NUMBER", "Seed used to reproduce a draft matching run.", "v1.0", null, null]
+      ]
+    },
+    {
+      "name": "Form Responses 1",
+      "purpose": "Append-only Google Form responses. Do not manually edit this sheet.",
+      "capacityRows": 1000,
+      "fields": [
+        { "name": "Timestamp", "type": "DATETIME", "required": true, "editable": false, "description": "Google Form submission timestamp." },
+        { "name": "Email Address", "type": "EMAIL", "required": true, "editable": false, "description": "Google account email captured by the form." },
+        { "name": "Full Name (First name and Last name)", "type": "TEXT", "required": true, "editable": false, "description": "Participant name." },
+        { "name": "What is your preferred email address?", "type": "EMAIL", "required": true, "editable": false, "description": "Primary deduplication key after normalization." },
+        { "name": "Your ICF membership number", "type": "TEXT", "required": false, "editable": false, "description": "Self-reported ICF membership number." },
+        { "name": "Membership expired date", "type": "DATE", "required": false, "editable": false, "description": "Self-reported membership expiry date." },
+        { "name": "Which Chapter are you a member of?", "type": "TEXT", "required": true, "editable": false, "description": "Raw Chapter selection, including multi-Chapter answers." },
+        { "name": "What is your most recent ICF credential?", "type": "TEXT", "required": true, "editable": false, "description": "Raw credential response." },
+        { "name": "How many hours of coaching experience (paid or unpaid) do you have?", "type": "TEXT", "required": true, "editable": false, "description": "Raw coaching-hours band." },
+        { "name": "What are your main areas of coaching practice? Select all that apply or add others. ", "type": "TEXT", "required": false, "editable": false, "description": "Practice areas retained for reference only." },
+        { "name": "What time zone are you in?", "type": "TEXT", "required": true, "editable": false, "description": "Raw GMT selection; not sufficient for Australasia DST handling." },
+        { "name": "Which days of the week are you available to meet for your coaching triad sessions? Select all that apply.", "type": "TEXT", "required": true, "editable": false, "description": "Raw local availability windows." },
+        { "name": "What are your language preferences for participating in this program? E.g. \"English\", \"Bahasa Indonesia + English\"", "type": "TEXT", "required": true, "editable": false, "description": "Free-text language preferences." },
+        { "name": "Would you be comfortable participating in triads where the common coaching language is English? ", "type": "TEXT", "required": true, "editable": false, "description": "English comfort and local-language-only requirement." },
+        { "name": "Do you have any scheduling constraints? We will do our best to take these into consideration when placing you into a coaching triad.", "type": "TEXT", "required": true, "editable": false, "description": "Whether scheduling constraints exist." },
+        { "name": "Please list any other scheduling constraints that you may have. We will do our best to take these into consideration when placing you into a coaching triad.", "type": "TEXT", "required": false, "editable": false, "description": "Free-text scheduling constraints." },
+        { "name": "What do you wish to gain from participating in the Coach a Coach Programme?", "type": "TEXT", "required": false, "editable": false, "description": "Programme goals retained for reference." },
+        { "name": " What coaching competencies or areas do you want to develop during this programme? ", "type": "TEXT", "required": false, "editable": false, "description": "Development goals retained for reference." },
+        { "name": "Thank you for your commitment to your professional development as an ICF member Coach. Before submitting your expression of interest, please consider all other personal and professional commitments.", "type": "BOOLEAN_TEXT", "required": true, "editable": false, "description": "Commitment response." },
+        { "name": "If you are a member of the ICF Australasia Chapter, please indicate whether you are based in Australia or New Zealand.", "type": "TEXT", "required": false, "editable": false, "description": "Partial residence hint; does not replace APAC residence verification." },
+        { "name": "Column 19", "type": "TEXT", "required": false, "editable": false, "description": "Unused source column retained for source compatibility." }
+      ]
+    },
+    {
+      "name": "02_Participants",
+      "purpose": "One canonical participant per normalized preferred email.",
+      "capacityRows": 500,
+      "fields": [
+        { "name": "participant_id", "type": "ID", "required": true, "editable": false, "description": "Stable participant ID such as P-0001." },
+        { "name": "source_row_numbers", "type": "TEXT", "required": true, "editable": false, "description": "All source rows merged into this participant." },
+        { "name": "latest_response_at", "type": "DATETIME", "required": true, "editable": false, "description": "Latest Google Form response timestamp." },
+        { "name": "full_name", "type": "TEXT", "required": true, "editable": false, "description": "Latest submitted participant name." },
+        { "name": "preferred_email", "type": "EMAIL", "required": true, "editable": false, "description": "Normalized preferred email." },
+        { "name": "form_email", "type": "EMAIL", "required": true, "editable": false, "description": "Latest captured Google account email." },
+        { "name": "icf_membership_no", "type": "TEXT", "required": false, "editable": true, "description": "Membership number confirmed by Chapter coordinator." },
+        { "name": "membership_expiry_date", "type": "DATE", "required": false, "editable": true, "description": "Confirmed membership expiry date." },
+        { "name": "primary_chapter_code", "type": "TEXT", "required": true, "editable": true, "description": "Primary Chapter used for verification ownership and diversity scoring." },
+        { "name": "additional_chapter_codes", "type": "TEXT", "required": false, "editable": true, "description": "Pipe-delimited secondary Chapter codes." },
+        { "name": "residence_country_code", "type": "TEXT", "required": true, "editable": true, "description": "ISO-style residence country or region code." },
+        { "name": "residence_city", "type": "TEXT", "required": false, "editable": true, "description": "Residence city used to verify IANA time zone." },
+        { "name": "apac_residence_confirmed", "type": "BOOLEAN", "required": true, "editable": true, "description": "Chapter confirmation that the participant resides in APAC." },
+        { "name": "credential_level", "type": "ENUM", "required": true, "editable": false, "description": "Normalized coaching credential.", "validation": ["LEARNING", "ACC", "PCC", "MCC"] },
+        { "name": "credential_rank", "type": "NUMBER", "required": true, "editable": false, "description": "LEARNING=0, ACC=1, PCC=2, MCC=3." },
+        { "name": "coaching_hours_band", "type": "ENUM", "required": true, "editable": false, "description": "Normalized coaching-hours band.", "validation": ["1_99", "100_499", "500_999", "1000_PLUS"] },
+        { "name": "hours_rank", "type": "NUMBER", "required": true, "editable": false, "description": "Hours-band rank from 0 to 3." },
+        { "name": "practice_areas_raw", "type": "TEXT", "required": false, "editable": false, "description": "Source practice areas; not used in v1 scoring." },
+        { "name": "timezone_raw", "type": "TEXT", "required": true, "editable": false, "description": "Original GMT response." },
+        { "name": "iana_timezone", "type": "TEXT", "required": true, "editable": true, "description": "Verified IANA zone such as Pacific/Auckland." },
+        { "name": "programme_utc_offsets", "type": "TEXT", "required": true, "editable": false, "description": "Six monthly UTC offsets in minutes, pipe-delimited." },
+        { "name": "timezone_verification_status", "type": "ENUM", "required": true, "editable": true, "description": "Time-zone normalization status.", "validation": ["NEEDS_REVIEW", "AUTO", "VERIFIED"] },
+        { "name": "language_mode", "type": "ENUM", "required": true, "editable": false, "description": "English comfort and language strictness.", "validation": ["ENGLISH_OK", "LOCAL_PREFERRED", "LOCAL_ONLY"] },
+        { "name": "required_language_code", "type": "TEXT", "required": false, "editable": true, "description": "Required common language for LOCAL_ONLY participants." },
+        { "name": "scheduling_constraints_raw", "type": "TEXT", "required": false, "editable": false, "description": "Free-text scheduling constraints." },
+        { "name": "commitment_confirmed", "type": "BOOLEAN", "required": true, "editable": false, "description": "Participant committed to the six-month programme." },
+        { "name": "renewal_commitment", "type": "BOOLEAN", "required": false, "editable": true, "description": "Participant commits to renew membership during the programme." },
+        { "name": "verification_status", "type": "ENUM", "required": true, "editable": true, "description": "Chapter membership verification decision.", "validation": ["PENDING", "VERIFIED", "RENEWAL_REQUIRED", "INELIGIBLE"] },
+        { "name": "verification_note", "type": "TEXT", "required": false, "editable": true, "description": "Coordinator verification note." },
+        { "name": "verified_by", "type": "EMAIL", "required": false, "editable": false, "description": "Coordinator account that verified eligibility." },
+        { "name": "verified_at", "type": "DATETIME", "required": false, "editable": false, "description": "Verification timestamp." },
+        { "name": "pool_type", "type": "ENUM", "required": true, "editable": true, "description": "Regular participant or board backup.", "validation": ["REGULAR", "BACKUP_BOARD"] },
+        { "name": "match_status", "type": "ENUM", "required": true, "editable": false, "description": "Current matching lifecycle status.", "validation": ["HOLD", "ELIGIBLE", "PROPOSED", "MATCHED", "UNMATCHED", "WITHDRAWN"] },
+        { "name": "manual_hold", "type": "BOOLEAN", "required": true, "editable": true, "description": "Manual exclusion from automatic matching." },
+        { "name": "hold_reason", "type": "TEXT", "required": false, "editable": true, "description": "Reason for manual or automatic hold." },
+        { "name": "prior_partner_ids", "type": "TEXT", "required": false, "editable": false, "description": "Pipe-delimited prior partner IDs for repeat-pair avoidance." },
+        { "name": "record_status", "type": "ENUM", "required": true, "editable": false, "description": "Canonical-record lifecycle status.", "validation": ["ACTIVE", "MERGED", "WITHDRAWN"] },
+        { "name": "updated_at", "type": "DATETIME", "required": true, "editable": false, "description": "Last canonical-record update." }
+      ]
+    },
+    {
+      "name": "03_Languages",
+      "purpose": "Normalized participant language preferences and hard requirements.",
+      "capacityRows": 2500,
+      "fields": [
+        { "name": "participant_id", "type": "ID", "required": true, "editable": false, "description": "Participant ID." },
+        { "name": "language_code", "type": "TEXT", "required": true, "editable": true, "description": "Canonical language code." },
+        { "name": "language_name", "type": "TEXT", "required": true, "editable": true, "description": "Display name." },
+        { "name": "preference_rank", "type": "NUMBER", "required": true, "editable": true, "description": "Preference rank starting at 1." },
+        { "name": "acceptable", "type": "BOOLEAN", "required": true, "editable": true, "description": "May be used as the triad common language." },
+        { "name": "required", "type": "BOOLEAN", "required": true, "editable": true, "description": "Hard requirement for local-language-only participants." },
+        { "name": "source_text", "type": "TEXT", "required": true, "editable": false, "description": "Original free-text answer." },
+        { "name": "normalization_status", "type": "ENUM", "required": true, "editable": true, "description": "Normalization review status.", "validation": ["AUTO", "REVIEWED", "NEEDS_REVIEW"] },
+        { "name": "reviewed_by", "type": "EMAIL", "required": false, "editable": false, "description": "Reviewer account." },
+        { "name": "reviewed_at", "type": "DATETIME", "required": false, "editable": false, "description": "Review timestamp." }
+      ]
+    },
+    {
+      "name": "04_Availability",
+      "purpose": "Normalized local availability with generated programme-wide UTC slot keys.",
+      "capacityRows": 8000,
+      "fields": [
+        { "name": "availability_id", "type": "ID", "required": true, "editable": false, "description": "Stable availability row ID." },
+        { "name": "participant_id", "type": "ID", "required": true, "editable": false, "description": "Participant ID." },
+        { "name": "weekday", "type": "NUMBER", "required": true, "editable": false, "description": "ISO weekday 1 through 7." },
+        { "name": "local_start_time", "type": "TIME", "required": true, "editable": false, "description": "Local availability start." },
+        { "name": "local_end_time", "type": "TIME", "required": true, "editable": false, "description": "Local availability end." },
+        { "name": "iana_timezone", "type": "TEXT", "required": true, "editable": false, "description": "Verified participant IANA time zone." },
+        { "name": "canonical_slot_keys", "type": "TEXT", "required": true, "editable": false, "description": "Programme-month UTC slot keys generated by Apps Script." },
+        { "name": "source_text", "type": "TEXT", "required": true, "editable": false, "description": "Original form answer." },
+        { "name": "normalization_status", "type": "ENUM", "required": true, "editable": true, "description": "Availability parsing status.", "validation": ["AUTO", "REVIEWED", "NEEDS_REVIEW"] }
+      ]
+    },
+    {
+      "name": "05_Chapters",
+      "purpose": "Chapter contacts, deadlines, and verification progress.",
+      "capacityRows": 50,
+      "fields": [
+        { "name": "chapter_code", "type": "ID", "required": true, "editable": false, "description": "Stable short code." },
+        { "name": "chapter_name", "type": "TEXT", "required": true, "editable": false, "description": "Official Chapter name." },
+        { "name": "coordinator_name", "type": "TEXT", "required": false, "editable": true, "description": "Primary coordinator name." },
+        { "name": "coordinator_email", "type": "EMAIL", "required": false, "editable": true, "description": "Primary coordinator email." },
+        { "name": "secondary_contact_email", "type": "EMAIL", "required": false, "editable": true, "description": "Backup coordinator email." },
+        { "name": "registration_deadline", "type": "DATE", "required": true, "editable": false, "description": "Chapter registration deadline." },
+        { "name": "verification_deadline", "type": "DATE", "required": true, "editable": false, "description": "Chapter verification deadline." },
+        { "name": "verification_status", "type": "ENUM", "required": true, "editable": true, "description": "Chapter-level verification progress.", "validation": ["NOT_STARTED", "IN_PROGRESS", "CONFIRMED"] },
+        { "name": "eligible_count", "type": "NUMBER", "required": true, "editable": false, "description": "Calculated eligible participant count." },
+        { "name": "pending_count", "type": "NUMBER", "required": true, "editable": false, "description": "Calculated pending verification count." },
+        { "name": "last_reminder_at", "type": "DATETIME", "required": false, "editable": false, "description": "Latest reminder timestamp." }
+      ]
+    },
+    {
+      "name": "06_Match_Runs",
+      "purpose": "Immutable metadata for every draft or published matching run.",
+      "capacityRows": 200,
+      "fields": [
+        { "name": "run_id", "type": "ID", "required": true, "editable": false, "description": "Matching run ID." },
+        { "name": "rules_version", "type": "TEXT", "required": true, "editable": false, "description": "Rules version used." },
+        { "name": "seed", "type": "NUMBER", "required": true, "editable": false, "description": "Deterministic seed." },
+        { "name": "started_at", "type": "DATETIME", "required": true, "editable": false, "description": "Run start timestamp." },
+        { "name": "started_by", "type": "EMAIL", "required": true, "editable": false, "description": "Account that started the run." },
+        { "name": "eligible_count", "type": "NUMBER", "required": true, "editable": false, "description": "Eligible regular participants." },
+        { "name": "triad_count", "type": "NUMBER", "required": true, "editable": false, "description": "Generated triads." },
+        { "name": "unmatched_count", "type": "NUMBER", "required": true, "editable": false, "description": "Unmatched regular participants." },
+        { "name": "backup_used_count", "type": "NUMBER", "required": true, "editable": false, "description": "Board backup participants used." },
+        { "name": "average_score", "type": "NUMBER", "required": true, "editable": false, "description": "Average soft score." },
+        { "name": "status", "type": "ENUM", "required": true, "editable": false, "description": "Run lifecycle status.", "validation": ["RUNNING", "DRAFT", "REVIEWED", "PUBLISHED", "REJECTED", "FAILED"] },
+        { "name": "published_at", "type": "DATETIME", "required": false, "editable": false, "description": "Publication timestamp." },
+        { "name": "notes", "type": "TEXT", "required": false, "editable": true, "description": "Run review notes." }
+      ]
+    },
+    {
+      "name": "07_Match_Proposals",
+      "purpose": "Human-reviewable triad proposals generated by one matching run.",
+      "capacityRows": 2500,
+      "fields": [
+        { "name": "run_id", "type": "ID", "required": true, "editable": false, "description": "Matching run ID." },
+        { "name": "proposal_id", "type": "ID", "required": true, "editable": false, "description": "Proposal ID." },
+        { "name": "member_1_id", "type": "ID", "required": true, "editable": false, "description": "First participant." },
+        { "name": "member_2_id", "type": "ID", "required": true, "editable": false, "description": "Second participant." },
+        { "name": "member_3_id", "type": "ID", "required": true, "editable": false, "description": "Third participant." },
+        { "name": "common_language_code", "type": "TEXT", "required": true, "editable": false, "description": "Selected common coaching language." },
+        { "name": "shared_slots_count", "type": "NUMBER", "required": true, "editable": false, "description": "Shared programme-wide meeting slots." },
+        { "name": "timezone_spread_max_minutes", "type": "NUMBER", "required": true, "editable": false, "description": "Maximum spread across programme months." },
+        { "name": "distinct_chapter_count", "type": "NUMBER", "required": true, "editable": false, "description": "Number of different primary Chapters." },
+        { "name": "credential_gap", "type": "NUMBER", "required": true, "editable": false, "description": "Maximum credential-rank gap." },
+        { "name": "hours_gap", "type": "NUMBER", "required": true, "editable": false, "description": "Maximum hours-rank gap." },
+        { "name": "score_cross_chapter", "type": "NUMBER", "required": true, "editable": false, "description": "Cross-Chapter subscore." },
+        { "name": "score_credential", "type": "NUMBER", "required": true, "editable": false, "description": "Credential similarity subscore." },
+        { "name": "score_hours", "type": "NUMBER", "required": true, "editable": false, "description": "Coaching-hours similarity subscore." },
+        { "name": "score_availability", "type": "NUMBER", "required": true, "editable": false, "description": "Availability quality subscore." },
+        { "name": "score_language", "type": "NUMBER", "required": true, "editable": false, "description": "Language-preference subscore." },
+        { "name": "score_prior_pairing", "type": "NUMBER", "required": true, "editable": false, "description": "Prior-pairing subscore." },
+        { "name": "total_score", "type": "NUMBER", "required": true, "editable": false, "description": "Weighted total from 0 to 100." },
+        { "name": "exception_codes", "type": "TEXT", "required": false, "editable": false, "description": "Pipe-delimited review exceptions." },
+        { "name": "review_status", "type": "ENUM", "required": true, "editable": true, "description": "Human review decision.", "validation": ["PENDING", "APPROVED", "REJECTED", "MANUALLY_EDITED"] },
+        { "name": "review_note", "type": "TEXT", "required": false, "editable": true, "description": "Reviewer note." },
+        { "name": "reviewed_by", "type": "EMAIL", "required": false, "editable": false, "description": "Reviewer account." },
+        { "name": "reviewed_at", "type": "DATETIME", "required": false, "editable": false, "description": "Review timestamp." }
+      ]
+    },
+    {
+      "name": "08_Triads",
+      "purpose": "Published triads and their operational state.",
+      "capacityRows": 750,
+      "fields": [
+        { "name": "triad_id", "type": "ID", "required": true, "editable": false, "description": "Published triad ID." },
+        { "name": "source_run_id", "type": "ID", "required": true, "editable": false, "description": "Run that created the triad." },
+        { "name": "status", "type": "ENUM", "required": true, "editable": true, "description": "Triad lifecycle status.", "validation": ["ACTIVE", "AT_RISK", "REMATCHING", "COMPLETED", "CLOSED"] },
+        { "name": "common_language_code", "type": "TEXT", "required": true, "editable": false, "description": "Published common language." },
+        { "name": "agreed_meeting_slot", "type": "TEXT", "required": false, "editable": true, "description": "Triad-selected recurring meeting slot." },
+        { "name": "coordinator_cc_list", "type": "TEXT", "required": true, "editable": false, "description": "Coordinator emails used for notifications." },
+        { "name": "published_at", "type": "DATETIME", "required": true, "editable": false, "description": "Publication timestamp." },
+        { "name": "last_completed_month", "type": "NUMBER", "required": false, "editable": false, "description": "Latest completed programme month." },
+        { "name": "next_followup_date", "type": "DATE", "required": false, "editable": true, "description": "Next coordinator follow-up date." },
+        { "name": "notes", "type": "TEXT", "required": false, "editable": true, "description": "Operational notes." }
+      ]
+    },
+    {
+      "name": "09_Triad_Members",
+      "purpose": "Append-only triad membership history for replacements and rematching.",
+      "capacityRows": 2500,
+      "fields": [
+        { "name": "triad_id", "type": "ID", "required": true, "editable": false, "description": "Triad ID." },
+        { "name": "participant_id", "type": "ID", "required": true, "editable": false, "description": "Participant ID." },
+        { "name": "member_status", "type": "ENUM", "required": true, "editable": false, "description": "Membership status.", "validation": ["ACTIVE", "REPLACED", "WITHDRAWN"] },
+        { "name": "joined_at", "type": "DATETIME", "required": true, "editable": false, "description": "Join timestamp." },
+        { "name": "left_at", "type": "DATETIME", "required": false, "editable": false, "description": "Exit timestamp." },
+        { "name": "initial_role_order", "type": "ENUM", "required": true, "editable": true, "description": "A, B, or C role rotation order.", "validation": ["A", "B", "C"] },
+        { "name": "replacement_for_participant_id", "type": "ID", "required": false, "editable": false, "description": "Participant replaced by this member." },
+        { "name": "rematch_case_id", "type": "ID", "required": false, "editable": false, "description": "Related rematch case." }
+      ]
+    },
+    {
+      "name": "10_Sessions",
+      "purpose": "One row per scheduled or completed triad session.",
+      "capacityRows": 5000,
+      "fields": [
+        { "name": "session_id", "type": "ID", "required": true, "editable": false, "description": "Session ID." },
+        { "name": "triad_id", "type": "ID", "required": true, "editable": false, "description": "Triad ID." },
+        { "name": "programme_month", "type": "NUMBER", "required": true, "editable": true, "description": "Programme month from 1 to 6." },
+        { "name": "sequence_no", "type": "NUMBER", "required": true, "editable": false, "description": "Session sequence within the triad." },
+        { "name": "scheduled_at", "type": "DATETIME", "required": false, "editable": true, "description": "Scheduled meeting date and time." },
+        { "name": "completed_at", "type": "DATETIME", "required": false, "editable": true, "description": "Completion timestamp." },
+        { "name": "status", "type": "ENUM", "required": true, "editable": true, "description": "Session status.", "validation": ["NOT_REPORTED", "SCHEDULED", "COMPLETED", "MISSED", "NEEDS_HELP"] },
+        { "name": "coach_id", "type": "ID", "required": false, "editable": true, "description": "Coach participant ID." },
+        { "name": "coachee_id", "type": "ID", "required": false, "editable": true, "description": "Coachee participant ID." },
+        { "name": "observer_id", "type": "ID", "required": false, "editable": true, "description": "Observer participant ID." },
+        { "name": "attendance_count", "type": "NUMBER", "required": false, "editable": true, "description": "Number of participants attending." },
+        { "name": "followup_required", "type": "BOOLEAN", "required": true, "editable": false, "description": "Calculated follow-up flag." },
+        { "name": "notes", "type": "TEXT", "required": false, "editable": true, "description": "Session notes excluding confidential coaching content." }
+      ]
+    },
+    {
+      "name": "11_Cases",
+      "purpose": "Data, eligibility, no-response, withdrawal, scheduling, and rematch cases.",
+      "capacityRows": 3000,
+      "fields": [
+        { "name": "case_id", "type": "ID", "required": true, "editable": false, "description": "Case ID." },
+        { "name": "case_type", "type": "ENUM", "required": true, "editable": false, "description": "Case category.", "validation": ["DATA", "ELIGIBILITY", "UNMATCHED", "NO_RESPONSE", "WITHDRAWAL", "SCHEDULING", "REMATCH", "MEMBERSHIP_RENEWAL"] },
+        { "name": "participant_id", "type": "ID", "required": false, "editable": false, "description": "Related participant." },
+        { "name": "triad_id", "type": "ID", "required": false, "editable": false, "description": "Related triad." },
+        { "name": "priority", "type": "ENUM", "required": true, "editable": true, "description": "Case priority.", "validation": ["LOW", "MEDIUM", "HIGH", "URGENT"] },
+        { "name": "status", "type": "ENUM", "required": true, "editable": true, "description": "Case status.", "validation": ["OPEN", "IN_REVIEW", "WAITING", "RESOLVED"] },
+        { "name": "owner_chapter_code", "type": "TEXT", "required": false, "editable": true, "description": "Owning Chapter." },
+        { "name": "owner_email", "type": "EMAIL", "required": false, "editable": true, "description": "Case owner." },
+        { "name": "opened_at", "type": "DATETIME", "required": true, "editable": false, "description": "Case open timestamp." },
+        { "name": "due_at", "type": "DATETIME", "required": false, "editable": true, "description": "Target resolution timestamp." },
+        { "name": "resolution", "type": "TEXT", "required": false, "editable": true, "description": "Resolution summary." },
+        { "name": "replacement_participant_id", "type": "ID", "required": false, "editable": false, "description": "Approved replacement participant." },
+        { "name": "resolved_by", "type": "EMAIL", "required": false, "editable": false, "description": "Resolver account." },
+        { "name": "resolved_at", "type": "DATETIME", "required": false, "editable": false, "description": "Resolution timestamp." }
+      ]
+    },
+    {
+      "name": "12_Audit_Log",
+      "purpose": "Append-only audit events for automated and manual changes.",
+      "capacityRows": 10000,
+      "fields": [
+        { "name": "event_id", "type": "ID", "required": true, "editable": false, "description": "Audit event ID." },
+        { "name": "timestamp", "type": "DATETIME", "required": true, "editable": false, "description": "Event timestamp." },
+        { "name": "actor", "type": "EMAIL", "required": true, "editable": false, "description": "User or service actor." },
+        { "name": "action", "type": "TEXT", "required": true, "editable": false, "description": "Action name." },
+        { "name": "entity_type", "type": "TEXT", "required": true, "editable": false, "description": "Entity type." },
+        { "name": "entity_id", "type": "ID", "required": true, "editable": false, "description": "Entity ID." },
+        { "name": "before_json", "type": "TEXT", "required": false, "editable": false, "description": "Previous state when relevant." },
+        { "name": "after_json", "type": "TEXT", "required": false, "editable": false, "description": "New state when relevant." },
+        { "name": "run_id", "type": "ID", "required": false, "editable": false, "description": "Related matching run." },
+        { "name": "note", "type": "TEXT", "required": false, "editable": false, "description": "Short audit note." }
+      ]
+    }
+  ]
+}

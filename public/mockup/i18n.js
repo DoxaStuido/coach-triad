@@ -291,7 +291,7 @@
 
   try {
     language = localStorage.getItem("cac-language") === "zh-TW" ? "zh-TW" : "en";
-  } catch (_) {
+  } catch {
     language = "en";
   }
 
@@ -343,7 +343,7 @@
 
     try {
       localStorage.setItem("cac-language", language);
-    } catch (_) {
+    } catch {
       // The language still works for this session if storage is unavailable.
     }
 
