@@ -106,12 +106,25 @@ var CacMatchingCore = (function () {
     return maximum;
   }
 
+  function credentialsCompatible_(first, second, third) {
+    var lowest = Math.min(first.credentialRank, second.credentialRank);
+    var highest = Math.max(first.credentialRank, second.credentialRank);
+    if (third) {
+      lowest = Math.min(lowest, third.credentialRank);
+      highest = Math.max(highest, third.credentialRank);
+    }
+    // MCC may only share a triad with MCC/PCC. A full triad cannot be all MCC or all learners.
+    if (highest === 3 && lowest < 2) return false;
+    return !third || lowest !== highest || (lowest !== 0 && lowest !== 3);
+  }
+
   function passesHardConstraints(triad, rawConfig) {
     var config = mergeConfig(rawConfig);
     if (!Array.isArray(triad) || triad.length !== 3) return false;
     if (unique_(triad.map(function (member) { return member.id; })).length !== 3) return false;
     if (config.excludedTriads.indexOf(triad.map(function (member) { return member.id; }).sort().join("|")) !== -1) return false;
     if (!triad.every(function (member) { return member.eligible === true && member.manualHold !== true; })) return false;
+    if (!credentialsCompatible_(triad[0], triad[1], triad[2])) return false;
     if (!config.allowPeerExceptions && peerExceptions(triad).length) return false;
 
     var common = commonLanguages(triad);
@@ -130,10 +143,8 @@ var CacMatchingCore = (function () {
   }
 
   function peerExceptions(triad) {
-    var credentials = triad.map(function (p) { return p.credentialRank; });
     var hours = triad.map(function (p) { return p.hoursRank; });
     var reasons = [];
-    if (Math.max.apply(null, credentials) - Math.min.apply(null, credentials) > 1) reasons.push("CREDENTIAL_GAP");
     if (Math.max.apply(null, hours) - Math.min.apply(null, hours) > 1) reasons.push("HOURS_GAP");
     return reasons;
   }
@@ -224,6 +235,7 @@ var CacMatchingCore = (function () {
 
   function pairMayBeCompatible_(left, right, config) {
     if (!left.eligible || !right.eligible || left.manualHold || right.manualHold) return false;
+    if (!credentialsCompatible_(left, right)) return false;
     if (!config.allowPeerExceptions && peerExceptions([left, right]).length) return false;
     var common = intersection_([left.acceptableLanguages || [], right.acceptableLanguages || []]);
     if (!common.length) return false;
@@ -277,7 +289,7 @@ var CacMatchingCore = (function () {
 
   function candidateTriadsForAnchor_(anchor, remaining, config, compatibilityIndex) {
     var compatibleIds = compatibilityIndex[anchor.id] || new Set();
-    var shortlist = remaining
+    var ranked = remaining
       .filter(function (candidate) { return compatibleIds.has(candidate.id); })
       .map(function (candidate) {
         var commonCount = intersection_([anchor.acceptableLanguages || [], candidate.acceptableLanguages || []]).length;
@@ -287,9 +299,18 @@ var CacMatchingCore = (function () {
         var countryBonus = anchor.countryGroup && candidate.countryGroup && anchor.countryGroup !== candidate.countryGroup ? 10 : 0;
         return { candidate: candidate, quick: commonCount * 5 + Math.min(20, slotCount / 20) + chapterBonus * 5 + countryBonus + peerBonus };
       })
-      .sort(function (left, right) { return right.quick - left.quick || String(left.candidate.id).localeCompare(String(right.candidate.id)); })
-      .slice(0, config.shortlistSize)
-      .map(function (entry) { return entry.candidate; });
+      .sort(function (left, right) { return right.quick - left.quick || String(left.candidate.id).localeCompare(String(right.candidate.id)); });
+    var shortlist = ranked.slice(0, config.shortlistSize).map(function (entry) { return entry.candidate; });
+    // Do not let same-level scores fill the shortlist with only forbidden all-MCC/all-learning triads.
+    if ((anchor.credentialRank === 0 || anchor.credentialRank === 3) && shortlist.length >= 2 &&
+        shortlist.every(function (candidate) { return candidate.credentialRank === anchor.credentialRank; })) {
+      for (var index = shortlist.length; index < ranked.length; index++) {
+        if (ranked[index].candidate.credentialRank !== anchor.credentialRank) {
+          shortlist[shortlist.length - 1] = ranked[index].candidate;
+          break;
+        }
+      }
+    }
 
     var candidates = [];
     for (var left = 0; left < shortlist.length; left++) {
@@ -455,6 +476,7 @@ var CacMatchingCore = (function () {
     commonLanguages: commonLanguages,
     sharedAvailabilitySlots: sharedAvailabilitySlots,
     maximumTimezoneSpread: maximumTimezoneSpread,
+    credentialsCompatible: credentialsCompatible_,
     passesHardConstraints: passesHardConstraints,
     scoreTriad: scoreTriad,
     peerExceptions: peerExceptions,

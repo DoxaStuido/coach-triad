@@ -134,3 +134,49 @@ test("matching groups a 300-participant pool without duplicate assignments", () 
   assert.equal(new Set(assignedIds).size, 300);
   assert.ok(Array.from(solution.triads).every(triad => core.passesHardConstraints(Array.from(triad.members))));
 });
+
+// All unordered compositions of learning (0), ACC (1), PCC (2), MCC (3).
+const credentialCompositions = [
+  [[0, 0, 0], false], [[0, 0, 1], true], [[0, 0, 2], true], [[0, 0, 3], false],
+  [[0, 1, 1], true], [[0, 1, 2], true], [[0, 1, 3], false], [[0, 2, 2], true],
+  [[0, 2, 3], false], [[0, 3, 3], false], [[1, 1, 1], true], [[1, 1, 2], true],
+  [[1, 1, 3], false], [[1, 2, 2], true], [[1, 2, 3], false], [[1, 3, 3], false],
+  [[2, 2, 2], true], [[2, 2, 3], true], [[2, 3, 3], true], [[3, 3, 3], false]
+];
+for (const [ranks, allowed] of credentialCompositions) {
+  test(`credential composition ${ranks.join("/")} is ${allowed ? "allowed" : "forbidden"} in every assignment path`, () => {
+    const members = ranks.map((credentialRank, i) => participant({ id: `C-${i}`, credentialRank }));
+    // Rotate the replacement role so the rule cannot accidentally depend on argument order.
+    for (let i = 0; i < 3; i++) {
+      const triad = members.slice(i).concat(members.slice(0, i));
+      assert.equal(core.credentialsCompatible(...triad), allowed);
+      assert.equal(core.passesHardConstraints(triad, { allowPeerExceptions: false }), allowed);
+      assert.equal(core.proposeRematch(triad.slice(0, 2), [triad[2]], {}).length, Number(allowed));
+      const backup = { ...triad[2], poolType: "BACKUP_BOARD" };
+      const result = core.matchParticipants(triad.slice(0, 2), [backup], { restartCount: 1 });
+      assert.equal(result.metrics.regularMatched, allowed ? 2 : 0);
+      assert.equal(result.metrics.backupUsed, Number(allowed));
+    }
+  });
+}
+
+for (const [rank, peer] of [[0, 1], [3, 2]]) {
+  test(`same-level shortlist retains a valid mixed candidate for rank ${rank}`, () => {
+    const people = Array.from({ length: 9 }, (_, i) => participant({
+      id: `S-${i}`, credentialRank: i < 6 ? rank : peer
+    }));
+    const result = core.matchParticipants(people, [], { shortlistSize: 2, restartCount: 1, seed: 20260918 });
+    assert.equal(result.metrics.regularMatched, 9);
+    for (const triad of result.triads) {
+      assert.equal(triad.members.filter(p => p.credentialRank === rank).length, 2);
+      assert.equal(triad.members.filter(p => p.credentialRank === peer).length, 1);
+    }
+  });
+}
+
+test("a held replacement cannot enter through rematch or backup filling", () => {
+  const pair = [participant({ id: "A" }), participant({ id: "B" })];
+  const held = participant({ id: "H", manualHold: true, poolType: "BACKUP_BOARD" });
+  assert.equal(core.proposeRematch(pair, [held], {}).length, 0);
+  assert.equal(core.matchParticipants(pair, [held], { restartCount: 1 }).metrics.regularMatched, 0);
+});
