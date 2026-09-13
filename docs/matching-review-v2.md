@@ -1,197 +1,195 @@
-# Matching Rules and Review Operations
+# 配對規則與審核操作
 
-[English](matching-review-v2.md) | [繁體中文](matching-review-v2.zh-TW.md)
+目前規則版本：`2026-09-13.v6`。結果交換格式仍是 `cac-review-v2`，兩者不是同一種版本。
 
-Current rules version: `2026-09-13.v6`. The result interchange format remains `cac-review-v2`; these are two different kinds of version.
+本文說明目前可執行的 **Excel → Node 配對 → 瀏覽器複查** 流程。Google Sheets 的早期 adapter 尚未完成本流程的實機整合；不能將本機測試通過視為已完成 Sheets 部署。安裝與啟動方式見 [README](../README.md)。
 
-This document describes the currently runnable **Excel → Node matching → browser review** workflow. The early Google Sheets adapter has not yet been integrated and tested in the actual Sheets environment for this workflow; passing local tests must not be treated as a completed Sheets deployment. See the [README](../README.md) for installation and startup instructions.
+## 1. 輸入與資料邊界
 
-## 1. Input and Data Boundaries
+- 原始名冊為 Excel 的 `Participants` 工作表。讀取器按順序檢查 20 欄標頭前綴，不是任意 Excel 欄位對應工具。
+- 保留原始列號，依 preferred email（空白時採表單 email）產生穩定雜湊 ID。重複身份必須先整理，讀取器不會擅自合併。
+- 原始 Excel 不會被修改。瀏覽器修正另存於 `overrides`，並保留修正歷史。
+- 會員號碼、會員到期日與個人成長敘述等不必要欄位不會輸出到複查包。結果仍含姓名、聯絡方式與原始排程備註，必須私下保管。
+- 原始名冊與多工作表營運模板不是可互換的輸入。營運模板的 `Form Responses 1`／`02_Participants` 不等於此讀取器要求的 `Participants`。
 
-- The source roster is the `Participants` worksheet in Excel. The reader checks 20 column-header prefixes in order; it is not a general-purpose Excel field-mapping tool.
-- Original row numbers are preserved, and stable hashed IDs are generated from the preferred email (falling back to the form email when blank). Duplicate identities must be resolved first; the reader does not merge them on its own.
-- The source Excel file is not modified. Browser corrections are stored separately in `overrides`, with correction history retained.
-- Unnecessary fields such as membership numbers, membership expiry dates, and personal-growth narratives are not exported to the review package. Results still contain names, contact details, and original scheduling notes, and must be kept private.
-- The source roster and the multi-sheet operations template are not interchangeable inputs. The operations template's `Form Responses 1` / `02_Participants` are not the `Participants` worksheet required by this reader.
+## 2. 五種互斥狀態
 
-## 2. Five Mutually Exclusive States
-
-| State | Meaning |
+| 狀態 | 意義 |
 | --- | --- |
-| Draft triads | Assigned to an automatic or manual triad; this does not mean approved or published. |
-| Data holds | Not yet grouped, with unresolved data issues such as credentials, commitment, language, or time-zone offset. |
-| Unmatched | Currently available for matching, but the search did not produce a suitable triad; this does not mean ineligible to participate. |
-| Unmatchable | The participant explicitly states that their usual residence / work base is outside this program's Asia-Pacific scope. |
-| Excluded | A coordinator has explicitly recorded a manual exclusion decision. |
+| 配對草案 | 已放入自動或手動三人組；不代表已核准或發布。 |
+| 資料待確認 | 尚未分組，且有資格、承諾、語言、時差等資料問題。 |
+| 尚未配對 | 目前可供配對，但搜尋沒有產生合適三人組；不是不符合參加資格。 |
+| 無法配對 | 本人明確自述常住地／工作基地在本計畫亞太範圍以外。 |
+| 已排除 | 協調人明確記錄了人工排除決定。 |
 
-Manual exclusion takes precedence over the regional determination, which takes precedence over data pending confirmation. No one is counted twice:
+人工排除優先於區域判定，區域判定優先於資料待確認，不重複計數：
 
 ```text
 total = assigned + unmatched + held + unmatchable + excluded
 matchingPool = assigned + unmatched
 ```
 
-A manual draft may include someone with issues still pending confirmation. That person counts toward `assigned`, not also toward the ungrouped `held` count; their original `blockingIssues` remain in the member data and must not be treated as confirmed data.
+手動草案可以包含仍有待確認事項的人。此人會計入 `assigned`，不再重複計入未分組的 `held`；原本的 `blockingIssues` 仍保留於組員資料，不能視為資料已確認。
 
-## 3. Requirements for Automatic Matching
+## 3. 自動配對的必要條件
 
-Before automatic matching, each participant must:
+自動配對前，每位參與者必須：
 
-- Have confirmed membership and an explicit commitment to participate.
-- Have neither a manual exclusion nor a determination of residence outside Asia-Pacific.
-- Have recognizable Chapter, coaching credential, coaching-hours band, accepted-language, and time-zone data.
-- Have computable availability.
+- 會員資格已確認，且有明確參與承諾。
+- 沒有人工排除或亞太區外常住地判定。
+- Chapter、教練資格、時數級距、可接受語言與時區資料可辨識。
+- 具有可計算的可用時段。
 
-Every automatic draft must:
+每個自動草案必須：
 
-- Contain exactly three distinct participants, with each person appearing in at most one group.
-- Have a language accepted by all three members and satisfy each person's local-language restriction.
-- Have at least one shared, continuous 60-minute candidate slot in every month of the six-month program.
-- Follow the hard credential-combination constraints below; later exception stages cannot relax them either.
+- 恰好三位不同參與者；每人最多出現在一組。
+- 三人有共同可接受的語言，並滿足每人的本地語言限定。
+- 在計畫六個月中，每個月都至少有一個共同、連續 60 分鐘的候選時段。
+- 遵守下列資格組合硬限制；後續例外階段也不能放寬。
 
-A rejected complete three-person combination is excluded from subsequent automatic recalculations; this does not prohibit any two of those people from sharing a group again.
+已拒絕的完整三人組合會在後續自動重算中排除；這不是禁止其中任意兩人再次同組。
 
-## 4. MCC, PCC, ACC, In learning
+## 4. MCC、PCC、ACC、In learning
 
-The internal comparison levels are `LEARNING=0`, `ACC=1`, `PCC=2`, and `MCC=3`. This is only an ordering for matching, not a certification of ability.
+內部比較等級為 `LEARNING=0`、`ACC=1`、`PCC=2`、`MCC=3`。這只是配對用的排序，不是能力認證。
 
-### Combination Constraints That Cannot Be Relaxed
+### 不可放寬的組合限制
 
-1. Three MCC participants must not share a group.
-2. Three In learning participants must not share a group.
-3. If a group contains an MCC, its other members must be MCC or PCC only.
-4. PCC participants may be grouped with ACC and/or In learning participants.
-5. All-PCC, all-ACC, and mixed ACC / In learning groups remain allowed.
+1. 不允許三位 MCC 同組。
+2. 不允許三位 In learning 同組。
+3. 只要組內有 MCC，其他成員只能是 MCC 或 PCC。
+4. PCC 可以與 ACC 及／或 In learning 同組。
+5. 全 PCC、全 ACC，以及 ACC／In learning 的混合組合仍允許。
 
-| Example combination | Credential combination allowed? |
+| 組合例子 | 資格組合是否允許 |
 | --- | --- |
-| MCC + MCC + PCC | Allowed |
-| MCC + PCC + PCC | Allowed |
-| MCC + MCC + MCC | Prohibited |
-| MCC + PCC + ACC | Prohibited; PCC does not bridge credential levels. |
-| MCC + PCC + In learning | Prohibited |
-| PCC + ACC + In learning | Allowed |
-| PCC + In learning + In learning | Allowed |
-| ACC + In learning + In learning | Allowed |
-| In learning + In learning + In learning | Prohibited |
+| MCC + MCC + PCC | 允許 |
+| MCC + PCC + PCC | 允許 |
+| MCC + MCC + MCC | 禁止 |
+| MCC + PCC + ACC | 禁止；PCC 不會成為跨級橋樑。 |
+| MCC + PCC + In learning | 禁止 |
+| PCC + ACC + In learning | 允許 |
+| PCC + In learning + In learning | 允許 |
+| ACC + In learning + In learning | 允許 |
+| In learning + In learning + In learning | 禁止 |
 
-“Allowed” still requires all other automatic-matching conditions to be satisfied. The old “credentials differ by at most one level” rule is no longer a general matching filter; credential similarity still affects scoring.
+「允許」仍須符合其他自動配對條件。舊版「資格最多差一級」已不再是一般配對的過濾條件；資格相近仍影響評分。
 
-If an answer contains multiple credentials, such as `PCC, In learning process`, it is marked `CREDENTIAL_UNRESOLVED` and must be confirmed before the participant can join either an automatic or a manual group.
+若答案同時包含多種資格，例如 `PCC, In learning process`，列為 `CREDENTIAL_UNRESOLVED`，必須確認後才能加入自動或手動組。
 
-## 5. Coaching Hours and Exception Stages
+## 5. 教練時數與例外階段
 
-The hours bands are `1–99`, `100–499`, `500–999`, and `1,000+`, corresponding to levels 0–3.
+時數級距為 `1–99`、`100–499`、`500–999`、`1,000+`，對應等級 0–3。
 
-The standard stage requires the highest and lowest hours bands to differ by at most one level, with a maximum time-zone difference of 180 minutes. Only unmatched participants move to the next stage:
+一般階段要求最高與最低時數級距最多差一級，最大時差不超過 180 分鐘。只將尚未配對的人送到下一階段：
 
-| Stage | Hours-band difference | Time-zone difference limit |
+| 階段 | 時數級距差 | 時差上限 |
 | --- | --- | --- |
-| `STANDARD` | At most one level | 180 minutes |
-| `PEER_EXCEPTION` | Relaxed | 180 minutes |
-| `TIMEZONE_EXCEPTION` | At most one level | 1,440 minutes |
-| `COMBINED_EXCEPTION` | Relaxed | 1,440 minutes |
+| `STANDARD` | 最多一級 | 180 分鐘 |
+| `PEER_EXCEPTION` | 放寬 | 180 分鐘 |
+| `TIMEZONE_EXCEPTION` | 最多一級 | 1,440 分鐘 |
+| `COMBINED_EXCEPTION` | 放寬 | 1,440 分鐘 |
 
-`PEER_EXCEPTION` currently refers to the coaching-hours gap; it does not relax the MCC credential constraints. Exception stages do not bypass the automatic-matching requirements for a shared language, commitment to participate, or shared 60-minute slots either. Exceptions remain drafts requiring human review, not automatic approvals.
+`PEER_EXCEPTION` 目前指教練時數差距，不會放寬 MCC 資格限制。自動配對的共同語言、參與承諾與共同 60 分鐘時段也不會被例外階段略過。例外仍是待人工核對的草案，不會自動核准。
 
-## 6. GMT, Availability, and Travel
+## 6. GMT、時段與旅行
 
-### Time-Zone Calculation
+### 時區計算
 
-- A single valid fixed GMT / UTC offset is used directly, including Australasia's `GMT+8`, `GMT+10`, and `GMT+12`.
-- City confirmation is no longer required solely because of Chapter or an offset above `+9`; fixed offsets are not automatically converted into cities or adjusted for daylight saving time.
-- Existing coordinator-confirmed IANA time-zone corrections still take precedence, with offsets calculated for the actual dates within the program period.
-- Invalid formats or multiple offsets, such as `GMT+6, GMT+7`, still require confirmation.
-- Notes mentioning a different GMT offset receive `TIMEZONE_NOTE_REVIEW`; they do not automatically replace or block the otherwise valid submitted offset.
+- 單一有效的 GMT／UTC 固定時差直接採用，包括 Australasia 的 `GMT+8`、`GMT+10`、`GMT+12`。
+- 不再因 Chapter 或超過 `+9` 而要求城市確認；不自行把固定時差轉成城市或套用夏令時間。
+- 既有協調人確認的 IANA 時區修正仍優先使用，依計畫期間的實際日期計算偏移。
+- 格式無效或同時填多個時差，例如 `GMT+6, GMT+7`，仍需確認。
+- 備註提到不同 GMT 時差時加上 `TIMEZONE_NOTE_REVIEW`，不自動取代或阻擋原本有效的提交時差。
 
-The program period is fixed at **2026-10-01 to 2027-03-31**. The engine considers candidate start times every 30 minutes, checking for continuous 60-minute availability and month-by-month intersections. Displayed times are candidates, not agreed meetings.
+計畫時間範圍固定為 **2026-10-01 至 2027-03-31**。引擎以每 30 分鐘為候選起點，檢查連續 60 分鐘與逐月交集。顯示的是候選時間，不是已約定的會議。
 
-### Travel and Short-Term Absence
+### 旅行與短期缺席
 
-Travel, short overseas stays, and inability to attend during a particular period are now marked `TRAVEL_RISK`:
+旅行、短期海外停留、某段期間無法出席改標為 `TRAVEL_RISK`：
 
-- They do not block matching.
-- This free text is not used to subtract dates or alter the submitted recurring availability.
-- Potential risks of the match failing are displayed for the individual and the group, so that the three members can confirm arrangements.
+- 不因此擋住配對。
+- 不依這段自由文字扣除日期或修改提交的週期時段。
+- 在個人與組別顯示潛在配對失敗風險，由三人確認安排。
 
-Ordinary client appointments, membership renewal dates, or daylight saving explanations should not be treated as travel merely because they mention a month.
+一般客戶預約、會員續約日期或夏令時間說明，不應僅因出現月份就被當作旅行。
 
-**Other free-text restrictions, such as working hours, have not yet been fully converted into availability rules.** `SCHEDULING_REVIEW` means a note awaits interpretation, not that a conflict has been confirmed; the engine cannot guarantee that every free-text requirement is satisfied.
+**其他工作時間等自由文字限制尚未完整轉成時段規則。** `SCHEDULING_REVIEW` 代表備註待判讀，不是已確認有衝突；引擎不能保證已滿足全部自由文字需求。
 
-## 7. Asia-Pacific Eligibility, Chapters, and India Grouping
+## 7. 亞太資格、Chapter 與印度群組
 
-The program continues to use an Asia-Pacific scope that includes Australia and New Zealand.
+本計畫沿用包含澳洲、紐西蘭的亞太範圍。
 
-- When participants explicitly state that their usual residence / base is outside Asia-Pacific, they are marked `OUTSIDE_APAC_RESIDENCE`, and their original `residenceEvidence` is displayed in the “Unmatchable” section.
-- Residence is not inferred from GMT, Chapter, nationality, or client location.
-- A permanent base in the United States with a short visit to Asia is still outside the region; a short visit to Europe followed by a return to Australia is marked only as a travel risk.
-- Detection uses conservative rules for self-reported statements and place names, not full natural-language understanding. Negation, past residence, or travel alone is not treated as evidence of a permanent base; unrecognized or ambiguous text is left for human review.
+- 本人明確自述常住地／基地在亞太區外時，列為 `OUTSIDE_APAC_RESIDENCE`，在「無法配對」區顯示原始 `residenceEvidence`。
+- 不從 GMT、Chapter、國籍或客戶所在地推定常住地。
+- 永久基地在美國、短期造訪亞洲，仍屬區域外；短期造訪歐洲後返回澳洲，則僅標旅行風險。
+- 辨識採保守的自述語句與地名規則，不是完整自然語言理解。否定、過去居住或單純旅行不當作永久基地證據；無法辨識或有歧義的文字保留給人工核對。
 
-Chapter geography is used only for group diversity. India's Bengaluru, Chennai, Delhi NCR, Hyderabad, Kolkata, and Mumbai (as well as Pune in the dictionary) are all classified as `IN`.
+Chapter 的地理分類只用於分組多樣性。印度的 Bengaluru、Chennai、Delhi NCR、Hyderabad、Kolkata、Mumbai（以及字典中的 Pune）都歸為 `IN`。
 
-Cross-country / region and cross-Chapter grouping are **priorities, not absolute bans on same-country / region or same-Chapter groups**. Such groups may still occur when there are insufficient alternatives, and their diversity warnings need review; shared-language, availability, or hard credential constraints are not bypassed to achieve cross-region grouping.
+跨國家／地區與跨 Chapter 是**優先偏好，不是絕對禁配**。不足時仍可能出現同群組，需查看多樣性警示；不會為了跨區而略過共同語言、時段或資格硬限制。
 
-## 8. Languages, Scoring, and Search
+## 8. 語言、評分與搜尋
 
-- Languages follow explicit form answers; English is not added for anyone who did not agree to it.
-- An answer of only `Chinese` is not automatically interpreted as Mandarin or Cantonese; English may still be used if explicitly accepted separately.
-- A local-language restriction must be satisfied by all three members, not merely by finding one other person who speaks that language.
+- 語言以表單明確回答為準，不自行替未同意者加入英語。
+- 單寫 `Chinese` 不自動認定為國語或粵語；若另有明確英語同意，仍可使用英語。
+- 本地語言限定必須由三人共同滿足，不能只找到其中一位會該語言。
 
-| Scoring factor | Weight |
+| 評分項目 | 權重 |
 | --- | ---: |
-| Credential similarity | 25 |
-| Coaching-hours similarity | 20 |
-| Country / region diversity | 20 |
-| Additional shared availability | 15 |
-| Chapter diversity | 10 |
-| Language preference | 5 |
-| Time-zone proximity | 5 |
+| 資格相近 | 25 |
+| 教練時數相近 | 20 |
+| 國家／地區多樣性 | 20 |
+| 額外共同時段 | 15 |
+| Chapter 多樣性 | 10 |
+| 語言偏好 | 5 |
+| 時區接近 | 5 |
 
-Credential / hours-band differences of 0, 1, 2, and 3 correspond to similarity scores of 100, 70, 30, and 0. Scores are not approval thresholds.
+資格／時數級距差 0、1、2、3 對應相近程度分數 100、70、30、0。分數不是核准門檻。
 
-Candidate selection additionally prioritizes cross-country / region grouping; complete solutions are compared first by the number of people matched, then by backup use, Chapter exceptions, and total score. The search uses a fixed seed, a bounded candidate set, multiple greedy searches, and local swaps. Results are reproducible but not guaranteed to be globally optimal.
+候選挑選另外優先考慮跨國家／地區；完整方案先比較配到的人數，再考慮備援使用、Chapter 例外與總分。使用固定 seed 的有限候選、多次貪婪搜尋及局部交換，結果可重現但不保證全域最佳。
 
-This roster supplies neither past matching history nor a board backup list, so neither is invented. Professional specialties are available for human review, not currently a matching weight for which other conditions are sacrificed.
+本名冊沒有提供過去配對歷史或 board backup 名單，因此不憑空補入。專業領域供人工查看，不是目前犧牲其他條件的配對權重。
 
-The six-month role rotation gives each person two turns each as coach, coachee, and observer; manual groups use the same rotation table. MCC participants are not permanently assigned as coach, nor In learning participants as coachee; this is a peer exchange, not a fixed mentor–mentee arrangement.
+六個月的角色輪替讓每人各擔任 coach、coachee、observer 兩次，手動組也使用同一輪替表。MCC 不會固定擔任 coach，In learning 也不會固定擔任 coachee；這是同儕交換，不是固定師徒組合。
 
-## 9. Manual Exclusion and Restoration
+## 9. 人工排除與恢復
 
-- From a participant's details or a member card, select “Exclude participant” and enter the reviewer and reason.
-- The decision is stored separately as `overrides[id].exclusion = {excluded,reviewer,reason,at}`. Original data is not deleted, and correction history retains the before-and-after values.
-- Exclusion immediately removes the person from active drafts on screen; the other affected members await recalculation. Statistics are marked as requiring recalculation, and approval is disabled.
-- Restoring participation does not automatically resolve data issues or the regional determination. Anyone meeting the outside-region criteria returns to “Unmatchable”.
-- A person in a manual group must have that manual group released first; exclusion must not be used to silently break up a preserved group.
+- 可從個人資料或組員卡片按「排除此人」，填寫審核人與原因。
+- 決定另存 `overrides[id].exclusion = {excluded,reviewer,reason,at}`，原始資料不刪除；修正歷史保留前後值。
+- 排除立即從畫面有效草案移除該人；受影響的其他成員等待重算。統計標記為待重新計算，核准停用。
+- 恢復參與不會自動解除資料問題或區域判定。符合區域外條件者回到「無法配對」。
+- 已加入手動組的人必須先解除該手動組，不能透過排除偷偷拆散保留的組別。
 
-## 10. Manual Matching
+## 10. 手動配對
 
-Select exactly three people from “Data holds” or “Unmatched”, enter the reviewer and reason, and acknowledge that this is a planning draft.
+從「資料待確認」或「尚未配對」中選恰好三人，填寫審核人、原因並確認這是規劃草案。
 
-- Do not take people who are already matched, excluded, or unmatchable.
-- Unresolved credentials must be confirmed first; hard credential constraints, including MCC restrictions, cannot be bypassed.
-- Other pending issues may temporarily remain in a manual draft, but manual matching does not establish participant consent or confirm the data.
-- Creating or releasing a manual group changes only that group, preserving other drafts and review records.
-- Manual groups use IDs such as `M-001`, which are not reused after release. `manualMatches` stores active decisions, while `manualMatchHistory` stores creation and release events.
-- Manual-group members are reserved before automatic recalculation; the same manual ID and membership are retained after JSON export / import.
-- Manual groups have no calculated quality score. Shared language, time-zone difference, and availability display only evidence-backed values; unknown values use `null` / “Not verified”, not fabricated slots.
-- Approval is prohibited while members still have data issues or any `MANUAL_*_UNVERIFIED` is present. Corrections can be made from member cards, followed by recalculation to refresh the evidence, without first releasing the manual group.
-- Management and release controls remain available while recalculation is pending or records conflict. “Release manual group” requires a reviewer and reason, and members return to Data holds or Unmatched according to their status.
+- 不挪用已配對、已排除或無法配對的人。
+- 資格未明者須先確認，MCC 等資格硬限制不能繞過。
+- 其他待確認事項可暫時保留在手動草案，但手動配對不代表本人同意或資料已確認。
+- 建立或解除只改該手動組，保留其他草案與審核紀錄。
+- 手動組使用 `M-001` 等 ID，解除後不重用。`manualMatches` 保存有效決定，`manualMatchHistory` 保存建立與解除事件。
+- 自動重算前先保留手動組成員；JSON 匯出／匯入後仍保留同一手動 ID 與成員。
+- 手動組沒有計算品質分數。共同語言、時差及時段只顯示有依據的值；未知時使用 `null`／「未驗證」，不填假時段。
+- 組員仍有資料問題，或有 `MANUAL_*_UNVERIFIED` 時不能核准。可從組員卡片補正，重算刷新證據，不必先解除手動組。
+- 管理與解除入口在待重算或記錄衝突時仍可使用；解除需要審核人與原因，成員依其狀態回到待確認或未配對。
 
-`summary.manualTriads` is separate from automatic exception-group counts. Starting again from Excel creates a fresh run; to retain manual decisions, you must resume from the exported JSON.
+`summary.manualTriads` 與自動例外組數分開。從 Excel 重新開始是全新執行；要保留手動決定，必須用匯出的 JSON 續作。
 
-## 11. Review, Persistence, and Current Limitations
+## 11. 審核、保存與目前限制
 
-- Approval requires a reviewer, notes, and verification checkboxes; approval is still not publication or sending email.
-- After data changes, recalculation must be explicitly triggered; an old review cannot be directly applied to new results. History is still retained.
-- Current operations are stored only in browser memory. Before closing, you must export JSON and confirm that it has been downloaded or copied.
-- HTML is not automatically rewritten; reopening the same HTML loads its original embedded snapshot. To resume, import the latest JSON.
-- A standalone HTML file includes the engine from when it was generated. After a rules update, you must use the new page and explicitly recalculate; refreshing an old HTML file does not upgrade it.
-- There is no multi-user synchronization, autosave, formal publication, notification sending, or Google Sheets write-back for the current roster.
+- 核准需要審核人、備註與核對勾選；核准仍不是發布或寄信。
+- 修改資料後要明確重算，不能把舊審核直接套用新結果。歷史仍保留。
+- 只有瀏覽器記憶體保存目前操作。關閉前必須匯出 JSON，並確認已下載或複製。
+- HTML 不會自動被改寫；重新開啟同一 HTML 載入的是原本嵌入的快照。續作需匯入最新 JSON。
+- 獨立 HTML 內含當時的引擎。規則更新後須使用新版頁面並明確重算，不是重新整理舊 HTML 就會升級。
+- 沒有多人同步、自動保存、正式發布、通知寄送或目前名冊的 Google Sheets 回寫。
 
-## 12. Verification
+## 12. 驗證
 
-`npm test` runs the build and matching tests; `npm run lint` runs ESLint. Tests should protect credential combinations, time-zone / travel / regional classification, manual exclusion, manual group creation and release, preservation across recalculation, unknown evidence, and mutually exclusive accounting.
+`npm test` 執行 build 與配對測試；`npm run lint` 執行 ESLint。測試應保護資格組合、時區／旅行／區域分類、手動排除、手動組隊與解除、重算保留、未知證據和互斥計數。
 
-`node scripts/verify-matching-result.mjs <result.json> <original.xlsx>` independently checks source fingerprints, counts, identity uniqueness, hard credential constraints, exclusion / regional restrictions, and the shared languages and 60-minute slots shown. Unconfirmed issues in manual drafts must not be treated as passing automatic eligibility; groups with unconfirmed evidence cannot be approved. The verifier also scans public assets for accidentally included email addresses from the source roster.
+`node scripts/verify-matching-result.mjs <result.json> <original.xlsx>` 獨立檢查來源指紋、計數、身份不重複、資格硬限制、排除／區域限制，以及已顯示的共同語言與 60 分鐘時段。手動草案的未確認事項不能被當作自動資格通過；有未確認證據的組別不能核准。檢查器亦掃描 public assets 是否意外包含來源名單 email。
 
-Successful tests and verification do not mean that all free-text requirements are satisfied, that deployment is complete, or that real participants have given consent.
+測試與驗證成功不代表自由文字需求全部成立，也不代表已部署或完成真人同意。
